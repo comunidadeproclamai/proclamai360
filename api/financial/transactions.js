@@ -43,8 +43,28 @@ export default async function handler(req, res) {
 
         return res.status(201).json({ transaction, accountBalance: updatedAccount.balance });
 
+      case 'GET':
+        const transactionsList = await prisma.financialTransaction.findMany({
+          orderBy: { date: 'desc' },
+          take: 100,
+          include: {
+            category: { select: { name: true } },
+            account: { select: { name: true } },
+            createdBy: { select: { name: true } }
+          }
+        });
+        
+        const formatted = transactionsList.map(t => ({
+          ...t,
+          category: t.category.name,
+          account: t.account.name,
+          createdBy: t.createdBy.name
+        }));
+
+        return res.status(200).json(formatted);
+
       default:
-        res.setHeader('Allow', ['POST']);
+        res.setHeader('Allow', ['GET', 'POST']);
         return res.status(405).end(`Method ${method} Not Allowed`);
     }
   } catch (error) {

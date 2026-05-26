@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '../../../styles/theme.js';
 import { parseCurrencyInput } from '../../../utils/currency.js';
@@ -157,34 +157,54 @@ const Button = styled.button`
   }
 `;
 
-export function TransactionModal({ onClose, onSave }) {
+export function TransactionModal({ onClose, onSave, supportData }) {
+  const { accounts = [], categories = [] } = supportData || {};
+  
+  const inflowCategories = categories.filter(c => c.type === 'INFLOW');
+  const outflowCategories = categories.filter(c => c.type === 'OUTFLOW');
+
   const [formData, setFormData] = useState({ 
     description: '', 
     amountStr: '', 
     type: 'INFLOW',
-    category: 'Dízimo'
+    categoryId: '',
+    accountId: accounts[0]?.id || ''
   });
+
+  // Atualizar ID inicial quando trocar o array de categorias
+  useEffect(() => {
+    if (formData.type === 'INFLOW' && inflowCategories.length > 0 && !inflowCategories.find(c => c.id === formData.categoryId)) {
+      setFormData(prev => ({ ...prev, categoryId: inflowCategories[0].id }));
+    } else if (formData.type === 'OUTFLOW' && outflowCategories.length > 0 && !outflowCategories.find(c => c.id === formData.categoryId)) {
+      setFormData(prev => ({ ...prev, categoryId: outflowCategories[0].id }));
+    }
+  }, [formData.type, categories]);
 
   const handleSubmit = () => {
     const numericAmount = parseCurrencyInput(formData.amountStr);
     if (!formData.description || numericAmount <= 0) {
       return alert('Descrição e valor são obrigatórios.');
     }
+    if (!formData.categoryId || !formData.accountId) {
+      return alert('Categoria e Conta são obrigatórias.');
+    }
     
     onSave({
       description: formData.description,
       amount: numericAmount,
       type: formData.type,
-      category: formData.category
+      categoryId: formData.categoryId,
+      accountId: formData.accountId
     });
     onClose();
   };
 
   const handleAmountChange = (e) => {
-    // Simple mask for R$ just letting user type numbers and we will parse it later
     const val = e.target.value.replace(/[^0-9,]/g, '');
     setFormData({ ...formData, amountStr: val });
   };
+
+  const activeCategories = formData.type === 'INFLOW' ? inflowCategories : outflowCategories;
 
   return (
     <Overlay onClick={onClose}>
@@ -198,14 +218,14 @@ export function TransactionModal({ onClose, onSave }) {
             <TypeButton 
               $active={formData.type === 'INFLOW'} 
               $type="INFLOW"
-              onClick={() => setFormData({...formData, type: 'INFLOW', category: 'Dízimo'})}
+              onClick={() => setFormData({...formData, type: 'INFLOW'})}
             >
               Receita
             </TypeButton>
             <TypeButton 
               $active={formData.type === 'OUTFLOW'} 
               $type="OUTFLOW"
-              onClick={() => setFormData({...formData, type: 'OUTFLOW', category: 'Despesa Fixa'})}
+              onClick={() => setFormData({...formData, type: 'OUTFLOW'})}
             >
               Despesa
             </TypeButton>
@@ -233,25 +253,28 @@ export function TransactionModal({ onClose, onSave }) {
             <FormGroup style={{ flex: 1 }}>
               <Label>Categoria</Label>
               <Select 
-                value={formData.category} 
-                onChange={e => setFormData({...formData, category: e.target.value})}
+                value={formData.categoryId} 
+                onChange={e => setFormData({...formData, categoryId: e.target.value})}
               >
-                {formData.type === 'INFLOW' ? (
-                  <>
-                    <option value="Dízimo">Dízimo</option>
-                    <option value="Oferta">Oferta</option>
-                    <option value="Doação">Doação</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="Despesa Fixa">Despesa Fixa</option>
-                    <option value="Manutenção">Manutenção</option>
-                    <option value="Ministério">Ministério</option>
-                  </>
-                )}
+                {activeCategories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
               </Select>
             </FormGroup>
           </div>
+
+          <FormGroup>
+            <Label>Conta Bancária</Label>
+            <Select 
+              value={formData.accountId} 
+              onChange={e => setFormData({...formData, accountId: e.target.value})}
+            >
+              {accounts.map(acc => (
+                <option key={acc.id} value={acc.id}>{acc.name}</option>
+              ))}
+            </Select>
+          </FormGroup>
+
         </Body>
         <Footer>
           <Button onClick={onClose}>Cancelar</Button>

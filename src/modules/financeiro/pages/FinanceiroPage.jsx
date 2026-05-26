@@ -154,7 +154,7 @@ const DeleteBtn = styled.button`
 `;
 
 export function FinanceiroPage() {
-  const { transactions, summary, isLoading, addTransaction, deleteTransaction } = useFinanceiro();
+  const { transactions, summary, supportData, isLoading, addTransaction, deleteTransaction } = useFinanceiro();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const formatDate = (isoString) => {
@@ -218,6 +218,7 @@ export function FinanceiroPage() {
         <TransactionModal 
           onClose={() => setIsModalOpen(false)}
           onSave={addTransaction}
+          supportData={supportData}
         />
       )}
     </PageContainer>

@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminPassword = await bcrypt.hash('adm123', 10);
+  const adminPassword = await bcrypt.hash('admin123@', 10);
   const localPassword = await bcrypt.hash('proclamai123', 10);
 
   const admin = await prisma.user.upsert({
@@ -61,6 +61,24 @@ async function main() {
     if (!existing) {
       await prisma.financialAccount.create({
         data: { name, type: 'BANK_ACCOUNT', balance: 0 },
+      });
+    }
+  }
+
+  // Seed Financial Categories
+  const categories = [
+    { name: 'Dízimo', type: 'INFLOW' },
+    { name: 'Oferta', type: 'INFLOW' },
+    { name: 'Doação', type: 'INFLOW' },
+    { name: 'Despesa Fixa', type: 'OUTFLOW' },
+    { name: 'Manutenção', type: 'OUTFLOW' },
+    { name: 'Ministério', type: 'OUTFLOW' },
+  ];
+  for (const cat of categories) {
+    const existing = await prisma.financialCategory.findFirst({ where: { name: cat.name } });
+    if (!existing) {
+      await prisma.financialCategory.create({
+        data: { name: cat.name, type: cat.type },
       });
     }
   }

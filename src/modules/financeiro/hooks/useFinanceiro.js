@@ -1,53 +1,64 @@
-import { useState, useEffect, useMemo } from 'react';
-
-const MOCK_TRANSACTIONS = [
-  { id: '1', description: 'Dízimo - João Silva', amount: 500.00, date: '2026-05-24T10:00:00Z', type: 'INFLOW', category: 'Dízimo' },
-  { id: '2', description: 'Conta de Luz', amount: 250.50, date: '2026-05-25T14:30:00Z', type: 'OUTFLOW', category: 'Despesa Fixa' },
-  { id: '3', description: 'Oferta Culto Domingo', amount: 1240.00, date: '2026-05-26T20:00:00Z', type: 'INFLOW', category: 'Oferta' },
-  { id: '4', description: 'Compra de Material Infantil', amount: 180.00, date: '2026-05-26T09:00:00Z', type: 'OUTFLOW', category: 'Ministério' },
-];
+import { useState, useEffect, useCallback } from 'react';
+import { apiClient } from '../../../services/apiClient.js';
+import { useAuth } from '../../auth/hooks/useAuth.js';
 
 export function useFinanceiro() {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
+  const [summary, setSummary] = useState({ balance: 0, totalInflow: 0, totalOutflow: 0 });
+  const [supportData, setSupportData] = useState({ accounts: [], categories: [] });
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTransactions(MOCK_TRANSACTIONS);
+  const fetchDashboard = useCallback(async () => {
+    try {
+      const [summaryRes, txRes, supportRes] = await Promise.all([
+        apiClient.get('/financial/summary'),
+        apiClient.get('/financial/transactions'),
+        apiClient.get('/financial/support-data')
+      ]);
+      
+      setSummary(summaryRes.data);
+      setTransactions(txRes.data);
+      setSupportData(supportRes.data);
+    } catch (error) {
+      console.error('Erro ao carregar dados financeiros', error);
+    } finally {
       setIsLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
+    }
   }, []);
 
-  const summary = useMemo(() => {
-    return transactions.reduce((acc, curr) => {
-      if (curr.type === 'INFLOW') {
-        acc.totalInflow += curr.amount;
-        acc.balance += curr.amount;
-      } else {
-        acc.totalOutflow += curr.amount;
-        acc.balance -= curr.amount;
-      }
-      return acc;
-    }, { balance: 0, totalInflow: 0, totalOutflow: 0 });
-  }, [transactions]);
+  useEffect(() => {
+    fetchDashboard();
+  }, [fetchDashboard]);
 
-  const addTransaction = (data) => {
-    const newTx = {
-      ...data,
-      id: Math.random().toString(36).substr(2, 9),
-      date: new Date().toISOString()
-    };
-    setTransactions(prev => [newTx, ...prev]);
+  const addTransaction = async (data) => {
+    try {
+      await apiClient.post('/financial/transactions', {
+        ...data,
+        createdById: user?.id
+      });
+      await fetchDashboard();
+      return true;
+    } catch (error) {
+      console.error('Erro ao salvar transação', error);
+      throw error;
+    }
   };
 
-  const deleteTransaction = (id) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+  const deleteTransaction = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta transação? O saldo da conta será recalculado.')) return;
+    try {
+      await apiClient.delete(`/financial/transactions/${id}`);
+      await fetchDashboard();
+    } catch (error) {
+      console.error('Erro ao excluir transação', error);
+    }
   };
 
   return {
     transactions,
     summary,
+    supportData,
     isLoading,
     addTransaction,
     deleteTransaction
