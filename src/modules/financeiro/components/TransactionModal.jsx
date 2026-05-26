@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { theme } from '../../../styles/theme.js';
 import { parseCurrencyInput } from '../../../utils/currency.js';
 import { X } from 'lucide-react';
 
@@ -27,12 +26,12 @@ const Overlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background: ${theme.colors.surface};
+  background: ${({ theme }) => theme.colors.surface};
   width: 100%;
   max-width: 500px;
-  border-radius: ${theme.radii.lg};
-  box-shadow: 0 24px 80px rgba(0,0,0,0.4);
-  border: 1px solid ${theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  box-shadow: ${({ theme }) => theme.shadow};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   animation: ${slideUp} 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   display: flex;
   flex-direction: column;
@@ -40,7 +39,7 @@ const ModalContent = styled.div`
 
 const Header = styled.div`
   padding: 1.5rem;
-  border-bottom: 1px solid ${theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -49,14 +48,16 @@ const Header = styled.div`
 const Title = styled.h2`
   margin: 0;
   font-size: 1.25rem;
-  color: ${theme.colors.ice};
-  font-weight: 600;
+  color: ${({ theme }) => theme.colors.ice};
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
 `;
 
 const CloseButton = styled.button`
   background: transparent;
   border: none;
-  color: ${theme.colors.muted};
+  color: ${({ theme }) => theme.colors.muted};
   border-radius: 50%;
   padding: 0.5rem;
   display: flex;
@@ -65,8 +66,8 @@ const CloseButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background: ${theme.colors.surfaceSoft};
-    color: ${theme.colors.ice};
+    background: ${({ theme }) => theme.colors.surfaceSoft};
+    color: ${({ theme }) => theme.colors.ice};
   }
 `;
 
@@ -84,33 +85,46 @@ const FormGroup = styled.div`
 `;
 
 const Label = styled.label`
-  font-size: 0.875rem;
-  color: ${theme.colors.muted};
-  font-weight: 500;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.muted};
+  font-weight: 600;
+  letter-spacing: 0.02em;
 `;
 
 const Input = styled.input`
   padding: 0.75rem 1rem;
-  background: ${theme.colors.charcoal};
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.radii.md};
-  color: ${theme.colors.ice};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  color: ${({ theme }) => theme.colors.ice};
   font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s;
 
   &:focus {
-    outline: none;
-    border-color: ${theme.colors.wine};
-    box-shadow: 0 0 0 2px rgba(138, 31, 61, 0.2);
+    border-color: ${({ theme }) => theme.colors.gold};
+    box-shadow: 0 0 0 3px rgba(197, 165, 92, 0.12);
   }
 `;
 
 const Select = styled.select`
   padding: 0.75rem 1rem;
-  background: ${theme.colors.charcoal};
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.radii.md};
-  color: ${theme.colors.ice};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  color: ${({ theme }) => theme.colors.ice};
   font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.gold};
+  }
+
+  option {
+    background: ${({ theme }) => theme.colors.charcoal};
+    color: ${({ theme }) => theme.colors.ice};
+  }
 `;
 
 const TypeSelector = styled.div`
@@ -121,15 +135,15 @@ const TypeSelector = styled.div`
 const TypeButton = styled.button`
   flex: 1;
   padding: 0.75rem;
-  border-radius: ${theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.md};
   font-weight: 600;
-  border: 1px solid ${({ $active, $type }) => 
+  border: 1px solid ${({ $active, $type, theme }) => 
     $active ? ($type === 'INFLOW' ? theme.colors.success : theme.colors.danger) : theme.colors.border
   };
   background: ${({ $active, $type }) => 
-    $active ? ($type === 'INFLOW' ? 'rgba(70,178,128,0.1)' : 'rgba(225,93,93,0.1)') : 'transparent'
+    $active ? ($type === 'INFLOW' ? 'rgba(60,168,118,0.08)' : 'rgba(223,83,83,0.08)') : 'transparent'
   };
-  color: ${({ $active, $type }) => 
+  color: ${({ $active, $type, theme }) => 
     $active ? ($type === 'INFLOW' ? theme.colors.success : theme.colors.danger) : theme.colors.muted
   };
   transition: all 0.2s;
@@ -137,8 +151,8 @@ const TypeButton = styled.button`
 
 const Footer = styled.div`
   padding: 1.5rem;
-  background: ${theme.colors.surfaceSoft};
-  border-top: 1px solid ${theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
@@ -146,14 +160,18 @@ const Footer = styled.div`
 
 const Button = styled.button`
   padding: 0.75rem 1.5rem;
-  border-radius: ${theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.md};
   font-weight: 600;
-  background: ${({ $primary }) => $primary ? theme.colors.wine : 'transparent'};
-  color: ${({ $primary }) => $primary ? 'white' : theme.colors.ice};
-  border: ${({ $primary }) => $primary ? 'none' : `1px solid ${theme.colors.border}`};
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  background: ${({ $primary, theme }) => $primary ? theme.colors.wine : 'transparent'};
+  color: ${({ $primary, theme }) => $primary ? 'white' : theme.colors.ice};
+  border: ${({ $primary, theme }) => $primary ? '1px solid rgba(197, 165, 92, 0.15)' : `1px solid ${theme.colors.border}`};
+  box-shadow: ${({ $primary }) => $primary ? '0 4px 15px rgba(92, 6, 30, 0.25)' : 'none'};
   
   &:hover {
-    background: ${({ $primary }) => $primary ? theme.colors.wineLight : theme.colors.charcoal};
+    background: ${({ $primary, theme }) => $primary ? theme.colors.wineLight : theme.colors.surface};
+    transform: ${({ $primary }) => $primary ? 'translateY(-1px)' : 'none'};
   }
 `;
 

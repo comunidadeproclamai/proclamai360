@@ -1,69 +1,147 @@
 import styled from 'styled-components';
-import { CalendarDays, MessageSquareText, UsersRound, WalletCards } from 'lucide-react';
+import { UsersRound, Wallet, QrCode, Sparkles, User, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatCard } from '../../../components/common/StatCard.jsx';
-import { theme } from '../../../styles/theme.js';
-
-const activityItems = [
-  'Organizar o fluxo inicial de cadastro de membros.',
-  'Conectar os indicadores aos dados reais do Supabase.',
-  'Definir as primeiras permissoes simples por perfil.',
-];
+import { useMembers } from '../../members/hooks/useMembers.js';
+import { useFinanceiro } from '../../financeiro/hooks/useFinanceiro.js';
+import { useInfantilLive } from '../../infantil/hooks/useInfantilLive.js';
+import { formatCurrency } from '../../../utils/currency.js';
 
 export function DashboardPage() {
+  const { members, isLoading: loadingMembers } = useMembers();
+  const { summary, transactions, isLoading: loadingFinance } = useFinanceiro();
+  const { activeChildren } = useInfantilLive();
+
+  // Get last 3 registered members
+  const recentMembers = members.slice(0, 3);
+  
+  // Get last 3 financial transactions
+  const recentTransactions = transactions.slice(0, 3);
+
+  const formatDate = (isoString) => {
+    return new Date(isoString).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  };
+
   return (
     <>
       <PageHeader
-        eyebrow="Visao geral"
+        eyebrow="Visão Geral"
         title="Dashboard"
-        description="Um ponto de partida enxuto para acompanhar a rotina da igreja sem transformar o sistema em um ERP pesado."
+        description="Acompanhamento operacional em tempo real da congregação. Dados integrados e atualizados instantaneamente."
       />
 
       <StatsGrid>
-        <StatCard label="Membros" value="0" detail="Modulo pronto para receber CRUD." tone="wine" />
-        <StatCard label="Infantil" value="0" detail="Base preparada para check-in futuro." />
-        <StatCard label="Financeiro" value="0" detail="Estrutura reservada para entradas e saidas." />
-        <StatCard label="Louvor" value="0" detail="Espaco inicial para escalas futuras." />
+        <StatCard 
+          label="Membros Ativos" 
+          value={loadingMembers ? '...' : members.length.toString()} 
+          detail="Total de cadastros ativos e visitantes" 
+          tone="wine" 
+        />
+        <StatCard 
+          label="Crianças em Sala" 
+          value={activeChildren.length.toString()} 
+          detail="Check-ins ativos no Ministério Infantil" 
+        />
+        <StatCard 
+          label="Saldo em Caixa" 
+          value={loadingFinance ? '...' : formatCurrency(summary.balance)} 
+          detail="Soma de saldos em contas integradas" 
+        />
+        <StatCard 
+          label="Lançamentos do Mês" 
+          value={loadingFinance ? '...' : transactions.length.toString()} 
+          detail="Entradas e saídas registradas" 
+        />
       </StatsGrid>
 
       <Board>
         <Panel>
           <PanelTitle>
-            <CalendarDays size={18} />
-            Proximas etapas
-          </PanelTitle>
-          <List>
-            {activityItems.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </List>
-        </Panel>
-
-        <Panel>
-          <PanelTitle>
-            <MessageSquareText size={18} />
-            Comunicacao
-          </PanelTitle>
-          <p>
-            A fundacao ja isola dominio, API e autenticação para permitir chat, notificacoes e
-            rotinas internas em etapas futuras.
-          </p>
-        </Panel>
-
-        <Panel>
-          <PanelTitle>
             <UsersRound size={18} />
-            Pessoas
+            Últimos Membros Cadastrados
           </PanelTitle>
-          <p>O primeiro dominio operacional deve nascer em `src/modules/members`.</p>
+          {recentMembers.length > 0 ? (
+            <RecentList>
+              {recentMembers.map((member) => (
+                <RecentItem key={member.id}>
+                  <AvatarFallback><User size={16} /></AvatarFallback>
+                  <RecentDetails>
+                    <strong>{member.name}</strong>
+                    <span>{member.congregation || 'Congregação Principal'} • {member.phone}</span>
+                  </RecentDetails>
+                </RecentItem>
+              ))}
+            </RecentList>
+          ) : (
+            <EmptyPanelText>Nenhum membro cadastrado recentemente.</EmptyPanelText>
+          )}
         </Panel>
 
         <Panel>
           <PanelTitle>
-            <WalletCards size={18} />
-            Gestao
+            <Wallet size={18} />
+            Últimas Movimentações Financeiras
           </PanelTitle>
-          <p>Indicadores financeiros e ministeriais ficam desacoplados dos componentes globais.</p>
+          {recentTransactions.length > 0 ? (
+            <RecentList>
+              {recentTransactions.map((tx) => (
+                <RecentItem key={tx.id}>
+                  <IconCircle $type={tx.type}>
+                    {tx.type === 'INFLOW' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                  </IconCircle>
+                  <RecentDetails>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                      <strong>{tx.description}</strong>
+                      <AmountText $type={tx.type}>
+                        {tx.type === 'INFLOW' ? '+' : '-'} {formatCurrency(tx.amount)}
+                      </AmountText>
+                    </div>
+                    <span>{tx.category} • {formatDate(tx.date)}</span>
+                  </RecentDetails>
+                </RecentItem>
+              ))}
+            </RecentList>
+          ) : (
+            <EmptyPanelText>Nenhuma movimentação financeira registrada.</EmptyPanelText>
+          )}
+        </Panel>
+
+        <Panel>
+          <PanelTitle>
+            <QrCode size={18} />
+            Check-in Infantil Ativo
+          </PanelTitle>
+          {activeChildren.length > 0 ? (
+            <RecentList>
+              {activeChildren.slice(0, 3).map((child) => (
+                <RecentItem key={child.id}>
+                  <ClassBadge>{child.room[0]}</ClassBadge>
+                  <RecentDetails>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                      <strong>{child.name}</strong>
+                      <CodeText>{child.securityCode}</CodeText>
+                    </div>
+                    <span>Classe: {child.room} • Idade: {child.age} anos</span>
+                  </RecentDetails>
+                </RecentItem>
+              ))}
+            </RecentList>
+          ) : (
+            <EmptyPanelText>Nenhuma criança em sala no momento.</EmptyPanelText>
+          )}
+        </Panel>
+
+        <Panel>
+          <PanelTitle>
+            <Sparkles size={18} />
+            Visão Geral de Configuração
+          </PanelTitle>
+          <InstructionBox>
+            <h4>Identidade Visual Premium</h4>
+            <p>
+              Acesse as configurações no menu lateral para alternar as preferências estéticas entre o <strong>Tema Claro</strong> e <strong>Tema Escuro</strong> com base na nova logo.
+            </p>
+          </InstructionBox>
         </Panel>
       </Board>
     </>
@@ -96,25 +174,20 @@ const Board = styled.section`
 `;
 
 const Panel = styled.article`
-  min-height: 11rem;
+  min-height: 12.5rem;
   padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: ${theme.radii.md};
-  background: rgba(28, 22, 23, 0.75);
+  border: 1px solid ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.04)'};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.75)'};
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: ${({ theme }) => theme.shadow};
   transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
-
-  p {
-    margin: 0.85rem 0 0;
-    color: ${theme.colors.muted};
-    font-size: 0.95rem;
-    line-height: 1.65;
-  }
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     border-color: rgba(197, 165, 92, 0.25);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), 0 0 15px rgba(197, 165, 92, 0.05);
+    box-shadow: ${({ theme }) => theme.shadow}, 0 0 15px rgba(197, 165, 92, 0.05);
     transform: translateY(-2px);
   }
 `;
@@ -123,37 +196,142 @@ const PanelTitle = styled.h2`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin: 0;
-  font-size: 1.15rem;
+  margin: 0 0 1rem 0;
+  font-size: 1.05rem;
   font-weight: 700;
-  color: ${theme.colors.ice};
+  color: ${({ theme }) => theme.colors.ice};
   letter-spacing: -0.01em;
 
   svg {
-    color: ${theme.colors.gold};
+    color: ${({ theme }) => theme.colors.gold};
   }
 `;
 
-const List = styled.ul`
-  display: grid;
-  gap: 0.75rem;
-  margin: 1rem 0 0;
-  padding-left: 1.25rem;
-  color: ${theme.colors.muted};
-  font-size: 0.95rem;
-  line-height: 1.6;
+const RecentList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  flex: 1;
+`;
 
-  li {
-    position: relative;
-    list-style: none;
-    padding-left: 0.25rem;
+const RecentItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 
-    &::before {
-      content: '•';
-      position: absolute;
-      left: -0.85rem;
-      color: ${theme.colors.gold};
-      font-weight: bold;
-    }
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+`;
+
+const AvatarFallback = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.wineGlow};
+  border: 1px solid rgba(127, 18, 44, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.gold};
+`;
+
+const IconCircle = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: ${({ $type }) => $type === 'INFLOW' ? 'rgba(60,168,118,0.08)' : 'rgba(223,83,83,0.08)'};
+  color: ${({ $type }) => $type === 'INFLOW' ? '#2c8f61' : '#cd3d3d'};
+  border: 1px solid ${({ $type }) => $type === 'INFLOW' ? 'rgba(60,168,118,0.2)' : 'rgba(223,83,83,0.2)'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ClassBadge = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  color: ${({ theme }) => theme.colors.gold};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+`;
+
+const RecentDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+
+  strong {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.ice};
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  span {
+    font-size: 0.78rem;
+    color: ${({ theme }) => theme.colors.muted};
+    font-weight: 400;
+    margin-top: 0.15rem;
+  }
+`;
+
+const AmountText = styled.span`
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  color: ${({ $type }) => $type === 'INFLOW' ? '#2c8f61' : '#cd3d3d'} !important;
+  font-family: 'Outfit', sans-serif;
+`;
+
+const CodeText = styled.span`
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  color: ${({ theme }) => theme.colors.gold} !important;
+  font-family: monospace;
+`;
+
+const EmptyPanelText = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: ${({ theme }) => theme.colors.mutedDark};
+  font-size: 0.875rem;
+  font-weight: 400;
+`;
+
+const InstructionBox = styled.div`
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  padding: 1rem;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: ${({ theme }) => theme.colors.gold};
+  }
+
+  p {
+    margin: 0 !important;
+    font-size: 0.8rem !important;
+    line-height: 1.5 !important;
+    color: ${({ theme }) => theme.colors.muted} !important;
   }
 `;

@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { theme } from '../../../styles/theme.js';
 import { KidAvatar } from './KidAvatar.jsx';
 import { LogOut, Clock } from 'lucide-react';
 
@@ -10,18 +9,21 @@ const Grid = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${theme.colors.surface};
-  border: 1px solid ${({ $isAllergic }) => $isAllergic ? 'rgba(225, 93, 93, 0.4)' : theme.colors.border};
-  border-radius: ${theme.radii.lg};
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.7)'};
+  backdrop-filter: blur(10px);
+  border: 1px solid ${({ $isAllergic, theme }) => $isAllergic ? 'rgba(223, 83, 83, 0.4)' : theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
+  box-shadow: ${({ theme }) => theme.shadow};
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    border-color: ${({ theme }) => theme.colors.gold};
+    box-shadow: ${({ theme }) => theme.shadow}, 0 0 15px rgba(197, 165, 92, 0.05);
   }
 `;
 
@@ -39,28 +41,29 @@ const InfoBlock = styled.div`
 
 const Name = styled.h3`
   margin: 0;
-  font-size: 1.1rem;
-  color: ${theme.colors.ice};
-  font-weight: 600;
+  font-size: 1.05rem;
+  color: ${({ theme }) => theme.colors.ice};
+  font-weight: 700;
 `;
 
 const Subtitle = styled.span`
   font-size: 0.85rem;
-  color: ${theme.colors.mutedDark};
+  color: ${({ theme }) => theme.colors.muted};
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  font-weight: 400;
 `;
 
 const CodeBadge = styled.div`
   padding: 0.5rem 1rem;
-  background: ${theme.colors.charcoal};
-  border: 1px dashed ${theme.colors.border};
-  border-radius: ${theme.radii.md};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
   font-family: monospace;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: ${theme.colors.wineLight};
+  color: ${({ theme }) => theme.colors.gold};
   text-align: center;
   letter-spacing: 2px;
 `;
@@ -68,37 +71,39 @@ const CodeBadge = styled.div`
 const Actions = styled.div`
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid ${theme.colors.border};
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
   padding-top: 1rem;
 `;
 
 const CheckoutButton = styled.button`
   background: transparent;
-  color: ${theme.colors.muted};
-  border: 1px solid ${theme.colors.border};
+  color: ${({ theme }) => theme.colors.muted};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   padding: 0.5rem 1rem;
-  border-radius: ${theme.radii.sm};
+  border-radius: ${({ theme }) => theme.radii.sm};
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.85rem;
   transition: all 0.2s;
 
   &:hover {
-    background: ${theme.colors.surfaceSoft};
-    color: ${theme.colors.ice};
-    border-color: ${theme.colors.mutedDark};
+    background: ${({ theme }) => theme.colors.surfaceSoft};
+    color: ${({ theme }) => theme.colors.ice};
+    border-color: ${({ theme }) => theme.colors.gold};
   }
 `;
 
 const EmptyState = styled.div`
   padding: 4rem;
   text-align: center;
-  color: ${theme.colors.mutedDark};
-  background: ${theme.colors.surface};
-  border: 1px dashed ${theme.colors.border};
-  border-radius: ${theme.radii.lg};
+  color: ${({ theme }) => theme.colors.muted};
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.7)'};
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  font-size: 0.95rem;
+  font-weight: 400;
 `;
 
 export function LiveClassroomGrid({ children, isLoading, onCheckout }) {
@@ -120,7 +125,7 @@ export function LiveClassroomGrid({ children, isLoading, onCheckout }) {
               <Subtitle>
                 {child.age} anos • {child.room}
               </Subtitle>
-              {child.allergies && <Subtitle style={{ color: theme.colors.danger, fontWeight: 500 }}>Alergia: {child.allergies}</Subtitle>}
+              {child.allergies && <Subtitle style={{ color: '#cd3d3d', fontWeight: 600 }}>Alergia: {child.allergies}</Subtitle>}
             </InfoBlock>
           </Header>
           

@@ -1,15 +1,14 @@
 import styled from 'styled-components';
-import { theme } from '../../../styles/theme.js';
 import { Trash2, Edit2, User } from 'lucide-react';
 
 const TableContainer = styled.div`
   width: 100%;
   overflow-x: auto;
-  background: rgba(28, 22, 23, 0.7);
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.7)'};
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: ${theme.radii.md};
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  box-shadow: ${({ theme }) => theme.shadow};
 `;
 
 const Table = styled.table`
@@ -21,20 +20,20 @@ const Table = styled.table`
 const Th = styled.th`
   padding: 1.15rem 1.25rem;
   font-size: 0.75rem;
-  color: ${theme.colors.gold};
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: ${({ theme }) => theme.colors.gold};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: rgba(18, 14, 15, 0.3);
+  background: ${({ theme }) => theme.colors.surfaceSoft};
 `;
 
 const Td = styled.td`
   padding: 1.15rem 1.25rem;
   font-size: 0.9rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   vertical-align: middle;
-  color: ${theme.colors.ice};
+  color: ${({ theme }) => theme.colors.ice};
 `;
 
 const AvatarContainer = styled.div`
@@ -47,13 +46,13 @@ const AvatarFallback = styled.div`
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: ${theme.colors.wineGlow};
-  border: 1px solid rgba(127, 18, 44, 0.3);
+  background: ${({ theme }) => theme.colors.wineGlow};
+  border: 1px solid rgba(127, 18, 44, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${theme.colors.gold};
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  color: ${({ theme }) => theme.colors.gold};
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 `;
 
 const NameCol = styled.div`
@@ -63,14 +62,14 @@ const NameCol = styled.div`
 
 const NameText = styled.span`
   font-weight: 600;
-  color: ${theme.colors.ice};
+  color: ${({ theme }) => theme.colors.ice};
   font-size: 0.95rem;
 `;
 
 const EmailText = styled.span`
   font-size: 0.8rem;
-  color: ${theme.colors.muted};
-  font-weight: 300;
+  color: ${({ theme }) => theme.colors.muted};
+  font-weight: 400;
 `;
 
 const Badge = styled.span`
@@ -80,38 +79,38 @@ const Badge = styled.span`
   font-weight: 700;
   letter-spacing: 0.03em;
   
-  background: ${({ $status }) => 
+  background: ${({ $status, theme }) => 
     $status === 'ACTIVE' ? 'rgba(60, 168, 118, 0.08)' :
     $status === 'VISITOR' ? 'rgba(212, 162, 63, 0.08)' :
-    'rgba(255, 255, 255, 0.02)'
+    'rgba(255, 255, 255, 0.05)'
   };
-  color: ${({ $status }) => 
+  color: ${({ $status, theme }) => 
     $status === 'ACTIVE' ? theme.colors.success :
     $status === 'VISITOR' ? theme.colors.warning :
     theme.colors.muted
   };
-  border: 1px solid ${({ $status }) => 
+  border: 1px solid ${({ $status, theme }) => 
     $status === 'ACTIVE' ? 'rgba(60, 168, 118, 0.2)' :
     $status === 'VISITOR' ? 'rgba(212, 162, 63, 0.2)' :
-    'rgba(255, 255, 255, 0.05)'
+    'rgba(255, 255, 255, 0.1)'
   };
 `;
 
 const ActionButton = styled.button`
   background: transparent;
   border: 1px solid transparent;
-  color: ${theme.colors.muted};
+  color: ${({ theme }) => theme.colors.muted};
   padding: 0.5rem;
-  border-radius: ${theme.radii.sm};
+  border-radius: ${({ theme }) => theme.radii.sm};
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.03);
-    color: ${({ title }) => title === 'Excluir' ? theme.colors.danger : theme.colors.goldLight};
-    border-color: ${({ title }) => title === 'Excluir' ? 'rgba(223, 83, 83, 0.2)' : 'rgba(197, 165, 92, 0.15)'};
+    background: rgba(255, 255, 255, 0.05);
+    color: ${({ title, theme }) => title === 'Excluir' ? theme.colors.danger : theme.colors.gold};
+    border-color: ${({ title, theme }) => title === 'Excluir' ? 'rgba(223, 83, 83, 0.2)' : 'rgba(197, 165, 92, 0.15)'};
     transform: scale(1.05);
   }
 `;
@@ -124,9 +123,9 @@ const FlexRow = styled.div`
 const EmptyState = styled.div`
   padding: 4rem;
   text-align: center;
-  color: ${theme.colors.muted};
+  color: ${({ theme }) => theme.colors.muted};
   font-size: 0.95rem;
-  font-weight: 300;
+  font-weight: 400;
 `;
 
 export function MembersTable({ members, isLoading, onDelete }) {

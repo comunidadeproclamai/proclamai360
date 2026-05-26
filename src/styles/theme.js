@@ -1,4 +1,4 @@
-export const theme = {
+export const darkTheme = {
   colors: {
     charcoal: '#120e0f',
     surface: '#1c1617',
@@ -27,3 +27,34 @@ export const theme = {
   glowShadow: '0 0 30px rgba(197, 165, 92, 0.15)',
 };
 
+export const lightTheme = {
+  colors: {
+    charcoal: '#FAF8F5',
+    surface: '#ffffff',
+    surfaceSoft: '#f3ece9',
+    border: '#e4dcd8',
+    wine: '#5c061e',
+    wineLight: '#7f122c',
+    wineGlow: 'rgba(92, 6, 30, 0.06)',
+    gold: '#a6833f',
+    goldLight: '#c5a55c',
+    goldGradient: 'linear-gradient(135deg, #876729 0%, #a6833f 40%, #d4bf8c 75%, #a6833f 100%)',
+    wineGradient: 'linear-gradient(135deg, #420412 0%, #5c061e 60%, #7f122c 100%)',
+    ice: '#221518', // Deep wine charcoal for high contrast text
+    muted: '#7e6a6d',
+    mutedDark: '#a59295',
+    success: '#2c8f61',
+    warning: '#ba8b2d',
+    danger: '#cd3d3d',
+  },
+  radii: {
+    sm: '8px',
+    md: '12px',
+    lg: '24px',
+  },
+  shadow: '0 20px 50px rgba(43, 30, 33, 0.07), 0 5px 15px rgba(43, 30, 33, 0.03)',
+  glowShadow: '0 0 30px rgba(166, 131, 63, 0.08)',
+};
+
+// Default theme for backward compatibility
+export const theme = darkTheme;

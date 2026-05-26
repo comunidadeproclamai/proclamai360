@@ -3,8 +3,7 @@ import styled from 'styled-components';
 import { useMembers } from '../hooks/useMembers.js';
 import { MembersTable } from '../components/MembersTable.jsx';
 import { MemberFormModal } from '../components/MemberFormModal.jsx';
-import { theme } from '../../../styles/theme.js';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 
 const PageContainer = styled.div`
   display: flex;
@@ -31,37 +30,37 @@ const TitleBlock = styled.div`
 `;
 
 const Title = styled.h1`
-  font-family: 'Playfair Display', Georgia, serif;
   font-size: clamp(1.8rem, 3vw, 2.5rem);
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
-  color: ${theme.colors.ice};
+  color: ${({ theme }) => theme.colors.ice};
   letter-spacing: -0.01em;
+  text-transform: uppercase;
 `;
 
 const Subtitle = styled.p`
   margin: 0;
-  color: ${theme.colors.muted};
+  color: ${({ theme }) => theme.colors.muted};
   font-size: 1rem;
-  font-weight: 300;
+  font-weight: 400;
 `;
 
 const PrimaryButton = styled.button`
-  background: ${theme.colors.wine};
+  background: ${({ theme }) => theme.colors.wine};
   color: white;
   border: 1px solid rgba(197, 165, 92, 0.15);
   padding: 0.75rem 1.5rem;
-  border-radius: ${theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.md};
   font-weight: 600;
   font-size: 0.95rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 15px rgba(92, 6, 30, 0.35);
+  box-shadow: 0 4px 15px rgba(92, 6, 30, 0.25);
   transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
-    background: ${theme.colors.wineLight};
+    background: ${({ theme }) => theme.colors.wineLight};
     box-shadow: 0 6px 20px rgba(127, 18, 44, 0.4);
     border-color: rgba(197, 165, 92, 0.3);
     transform: translateY(-2px);
@@ -75,12 +74,12 @@ const PrimaryButton = styled.button`
 const FiltersBar = styled.div`
   display: flex;
   gap: 1rem;
-  background: rgba(28, 22, 23, 0.7);
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.7)'};
   backdrop-filter: blur(10px);
   padding: 1rem;
-  border-radius: ${theme.radii.md};
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-radius: ${({ theme }) => theme.radii.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: ${({ theme }) => theme.shadow};
 
   @media (max-width: 640px) {
     flex-direction: column;
@@ -102,54 +101,55 @@ const SearchInputWrapper = styled.div`
 const SearchIcon = styled(Search)`
   position: absolute;
   left: 1rem;
-  color: ${theme.colors.muted};
+  color: ${({ theme }) => theme.colors.muted};
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 3rem;
-  background: rgba(18, 14, 15, 0.6);
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.radii.md};
-  color: ${theme.colors.ice};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  color: ${({ theme }) => theme.colors.ice};
   font-size: 0.95rem;
   outline: none;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
   transition: all 0.2s ease;
 
   &::placeholder {
-    color: rgba(255, 255, 255, 0.25);
+    color: ${({ theme }) => theme.colors.mutedDark};
+    opacity: 0.7;
   }
 
   &:focus {
-    border-color: ${theme.colors.gold};
-    box-shadow: 0 0 0 3px rgba(197, 165, 92, 0.12), inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: ${({ theme }) => theme.colors.gold};
+    background: ${({ theme }) => theme.colors.surface};
+    box-shadow: 0 0 0 3px rgba(197, 165, 92, 0.12), inset 0 2px 4px rgba(0, 0, 0, 0.03);
   }
 `;
 
 const Select = styled.select`
-  padding: 0.75rem 1.5rem 0.75rem 1rem;
-  background: rgba(18, 14, 15, 0.6);
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.radii.md};
-  color: ${theme.colors.ice};
+  padding: 0.75rem 2rem 0.75rem 1rem;
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  color: ${({ theme }) => theme.colors.ice};
   font-size: 0.95rem;
   outline: none;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
   transition: all 0.2s ease;
   cursor: pointer;
 
   &:focus {
-    border-color: ${theme.colors.gold};
+    border-color: ${({ theme }) => theme.colors.gold};
     box-shadow: 0 0 0 3px rgba(197, 165, 92, 0.12);
   }
 
   option {
-    background: ${theme.colors.charcoal};
-    color: ${theme.colors.ice};
+    background: ${({ theme }) => theme.colors.charcoal};
+    color: ${({ theme }) => theme.colors.surface === '#ffffff' ? '#221518' : '#fcfaf7'};
   }
 `;
-
 
 export function MembersPage() {
   const { members, isLoading, search, setSearch, statusFilter, setStatusFilter, addMember, deleteMember } = useMembers();

@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import { PageHeader } from './PageHeader.jsx';
 import { EmptyState } from '../feedback/EmptyState.jsx';
-import { theme } from '../../styles/theme.js';
 
 export function DomainPage({ eyebrow, title, description, icon: Icon, nextSteps }) {
   return (
@@ -13,16 +12,15 @@ export function DomainPage({ eyebrow, title, description, icon: Icon, nextSteps 
           <IconWrap>
             <Icon size={24} />
           </IconWrap>
-          <h2>Modulo preparado</h2>
+          <h2>Módulo Preparado</h2>
           <p>
-            Esta area ja existe na navegacao, no roteamento e na estrutura do projeto para crescer
-            com componentes, services e hooks proprios.
+            Esta área já está mapeada na navegação, rotas e estruturas do projeto para crescer com componentes, serviços e lógicas de negócio específicas.
           </p>
         </HeroPanel>
 
         <EmptyState
-          title="Fila de evolucao"
-          description="A implementacao funcional deste modulo deve nascer dentro da propria pasta de dominio."
+          title="Fila de Evolução"
+          description="A implementação funcional deste módulo nascerá dentro de sua respectiva pasta de domínio."
         />
       </DomainGrid>
 
@@ -38,7 +36,7 @@ export function DomainPage({ eyebrow, title, description, icon: Icon, nextSteps 
 const DomainGrid = styled.section`
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.8fr);
-  gap: 0.9rem;
+  gap: 1.25rem;
 
   @media (max-width: 760px) {
     grid-template-columns: 1fr;
@@ -46,41 +44,58 @@ const DomainGrid = styled.section`
 `;
 
 const HeroPanel = styled.section`
-  padding: 1.25rem;
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.radii.md};
-  background: ${theme.colors.surface};
+  padding: 1.5rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.7)'};
+  backdrop-filter: blur(10px);
+  box-shadow: ${({ theme }) => theme.shadow};
 
   h2 {
-    margin: 1rem 0 0;
+    margin: 1.25rem 0 0;
     font-size: 1.15rem;
+    font-weight: 700;
+    color: ${({ theme }) => theme.colors.ice};
   }
 
   p {
     margin: 0.55rem 0 0;
-    color: ${theme.colors.muted};
+    color: ${({ theme }) => theme.colors.muted};
     line-height: 1.6;
+    font-size: 0.95rem;
+    font-weight: 400;
   }
 `;
 
 const IconWrap = styled.div`
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: ${theme.radii.md};
-  background: rgba(138, 31, 61, 0.18);
-  color: ${theme.colors.wineLight};
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.wineGlow};
+  border: 1px solid rgba(127, 18, 44, 0.2);
+  color: ${({ theme }) => theme.colors.gold};
 `;
 
 const Steps = styled.ul`
   display: grid;
-  gap: 0.7rem;
-  margin: 1rem 0 0;
-  padding: 1.15rem 1.15rem 1.15rem 2.25rem;
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.radii.md};
-  background: rgba(30, 27, 27, 0.62);
-  color: ${theme.colors.muted};
-  line-height: 1.5;
+  gap: 0.75rem;
+  margin: 1.5rem 0 0;
+  padding: 1.5rem 1.5rem 1.5rem 2.5rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.95rem;
+  line-height: 1.6;
+
+  li {
+    list-style: square;
+    color: ${({ theme }) => theme.colors.ice};
+    
+    &::marker {
+      color: ${({ theme }) => theme.colors.gold};
+    }
+  }
 `;

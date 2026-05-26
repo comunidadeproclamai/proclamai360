@@ -2,7 +2,6 @@ import styled from 'styled-components';
 import { LockKeyhole, LogIn, UserPlus } from 'lucide-react';
 import { Button } from '../../../components/common/Button.jsx';
 import { TextField } from '../../../components/forms/TextField.jsx';
-import { theme } from '../../../styles/theme.js';
 
 export function AuthPanel({
   mode,
@@ -82,11 +81,11 @@ export function AuthPanel({
 const Panel = styled.section`
   width: min(100%, 27rem);
   padding: 2.25rem 2rem;
-  border: 1px solid rgba(197, 165, 92, 0.16);
-  border-radius: ${theme.radii.lg};
-  background: rgba(28, 22, 23, 0.85);
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.85)'};
   backdrop-filter: blur(20px);
-  box-shadow: ${theme.shadow}, inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: ${({ theme }) => theme.shadow}, inset 0 1px 0 rgba(255, 255, 255, 0.05);
   position: relative;
   overflow: hidden;
 
@@ -97,7 +96,7 @@ const Panel = styled.section`
     left: 0;
     right: 0;
     height: 3px;
-    background: ${theme.colors.goldGradient};
+    background: ${({ theme }) => theme.colors.goldGradient};
   }
 `;
 
@@ -109,17 +108,17 @@ const PanelHeader = styled.div`
 
   h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 700;
-    color: ${theme.colors.ice};
+    color: ${({ theme }) => theme.colors.ice};
     letter-spacing: -0.01em;
   }
 
   p {
     margin: 0.25rem 0 0;
-    color: ${theme.colors.muted};
-    font-size: 0.875rem;
-    font-weight: 300;
+    color: ${({ theme }) => theme.colors.muted};
+    font-size: 0.85rem;
+    font-weight: 400;
   }
 `;
 
@@ -128,10 +127,10 @@ const IconContainer = styled.div`
   place-items: center;
   width: 2.75rem;
   height: 2.75rem;
-  border-radius: ${theme.radii.md};
-  background: ${theme.colors.wineGlow};
-  border: 1px solid rgba(127, 18, 44, 0.3);
-  color: ${theme.colors.gold};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.wineGlow};
+  border: 1px solid rgba(127, 18, 44, 0.2);
+  color: ${({ theme }) => theme.colors.gold};
 `;
 
 const ModeSwitch = styled.div`
@@ -140,30 +139,30 @@ const ModeSwitch = styled.div`
   gap: 0.4rem;
   padding: 0.35rem;
   margin-bottom: 1.75rem;
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.radii.md};
-  background: rgba(18, 14, 15, 0.6);
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
 `;
 
 const TabButton = styled.button`
   min-height: 2.5rem;
   border: 0;
-  border-radius: ${theme.radii.sm};
+  border-radius: ${({ theme }) => theme.radii.sm};
   background: transparent;
-  color: ${theme.colors.muted};
+  color: ${({ theme }) => theme.colors.muted};
   font-weight: 600;
   font-size: 0.9rem;
   transition: all 0.2s ease;
 
   &[data-active='true'] {
-    background: ${theme.colors.wine};
-    color: ${theme.colors.ice};
-    box-shadow: 0 4px 12px rgba(92, 6, 30, 0.35);
+    background: ${({ theme }) => theme.colors.wine};
+    color: #fcfaf7;
+    box-shadow: 0 4px 12px rgba(92, 6, 30, 0.3);
   }
 
   &:hover:not([data-active='true']) {
-    color: ${theme.colors.ice};
-    background: rgba(255, 255, 255, 0.03);
+    color: ${({ theme }) => theme.colors.ice};
+    background: rgba(255, 255, 255, 0.05);
   }
 `;
 
@@ -175,23 +174,23 @@ const Form = styled.form`
 const ErrorMessage = styled.div`
   padding: 0.9rem 1rem;
   border: 1px solid rgba(223, 83, 83, 0.3);
-  border-radius: ${theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.md};
   background: rgba(223, 83, 83, 0.06);
-  color: ${theme.colors.danger};
-  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.danger};
+  font-size: 0.85rem;
   line-height: 1.5;
 `;
 
 const SubmitButton = styled(Button)`
   margin-top: 0.5rem;
   width: 100%;
-  box-shadow: 0 4px 20px rgba(92, 6, 30, 0.4);
-  background: ${theme.colors.wine};
+  box-shadow: 0 4px 20px rgba(92, 6, 30, 0.3);
+  background: ${({ theme }) => theme.colors.wine};
   border: 1px solid rgba(197, 165, 92, 0.15);
 
   &:hover {
-    background: ${theme.colors.wineLight};
-    box-shadow: 0 4px 25px rgba(127, 18, 44, 0.5);
+    background: ${({ theme }) => theme.colors.wineLight};
+    box-shadow: 0 4px 25px rgba(127, 18, 44, 0.4);
     transform: translateY(-1px);
   }
 
@@ -199,4 +198,3 @@ const SubmitButton = styled(Button)`
     transform: translateY(0);
   }
 `;
-

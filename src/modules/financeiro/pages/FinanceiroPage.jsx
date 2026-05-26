@@ -4,7 +4,6 @@ import { useFinanceiro } from '../hooks/useFinanceiro.js';
 import { BalanceCards } from '../components/BalanceCards.jsx';
 import { TransactionModal } from '../components/TransactionModal.jsx';
 import { formatCurrency } from '../../../utils/currency.js';
-import { theme } from '../../../styles/theme.js';
 import { Plus, ArrowDownLeft, ArrowUpRight, Trash2 } from 'lucide-react';
 
 const PageContainer = styled.div`
@@ -32,37 +31,37 @@ const TitleBlock = styled.div`
 `;
 
 const Title = styled.h1`
-  font-family: 'Playfair Display', Georgia, serif;
   font-size: clamp(1.8rem, 3vw, 2.5rem);
-  font-weight: 700;
+  font-weight: 800;
   margin: 0;
-  color: ${theme.colors.ice};
+  color: ${({ theme }) => theme.colors.ice};
   letter-spacing: -0.01em;
+  text-transform: uppercase;
 `;
 
 const Subtitle = styled.p`
   margin: 0;
-  color: ${theme.colors.muted};
+  color: ${({ theme }) => theme.colors.muted};
   font-size: 1rem;
-  font-weight: 300;
+  font-weight: 400;
 `;
 
 const PrimaryButton = styled.button`
-  background: ${theme.colors.wine};
+  background: ${({ theme }) => theme.colors.wine};
   color: white;
   border: 1px solid rgba(197, 165, 92, 0.15);
   padding: 0.75rem 1.5rem;
-  border-radius: ${theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.md};
   font-weight: 600;
   font-size: 0.95rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 15px rgba(92, 6, 30, 0.35);
+  box-shadow: 0 4px 15px rgba(92, 6, 30, 0.25);
   transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
-    background: ${theme.colors.wineLight};
+    background: ${({ theme }) => theme.colors.wineLight};
     box-shadow: 0 6px 20px rgba(127, 18, 44, 0.4);
     border-color: rgba(197, 165, 92, 0.3);
     transform: translateY(-2px);
@@ -74,18 +73,18 @@ const PrimaryButton = styled.button`
 `;
 
 const ExtratoContainer = styled.div`
-  background: rgba(28, 22, 23, 0.7);
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.7)'};
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: ${theme.radii.lg};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: ${({ theme }) => theme.shadow};
 `;
 
 const ExtratoHeader = styled.div`
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(18, 14, 15, 0.3);
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
   
   h2 {
     margin: 0;
@@ -93,7 +92,7 @@ const ExtratoHeader = styled.div`
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: ${theme.colors.gold};
+    color: ${({ theme }) => theme.colors.gold};
   }
 `;
 
@@ -108,7 +107,7 @@ const ListItem = styled.li`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   transition: background-color 0.2s ease;
   
   &:last-child {
@@ -116,7 +115,7 @@ const ListItem = styled.li`
   }
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.01);
+    background-color: rgba(255, 255, 255, 0.03);
   }
 `;
 
@@ -131,12 +130,12 @@ const IconCircle = styled.div`
   height: 40px;
   border-radius: 50%;
   background: ${({ $type }) => $type === 'INFLOW' ? 'rgba(60,168,118,0.08)' : 'rgba(223,83,83,0.08)'};
-  color: ${({ $type }) => $type === 'INFLOW' ? theme.colors.success : theme.colors.danger};
-  border: 1px solid ${({ $type }) => $type === 'INFLOW' ? 'rgba(60,168,118,0.2)' : 'rgba(223,83,83,0.2)'};
+  color: ${({ $type, theme }) => $type === 'INFLOW' ? theme.colors.success : theme.colors.danger};
+  border: 1px solid ${({ $type, theme }) => $type === 'INFLOW' ? 'rgba(60,168,118,0.2)' : 'rgba(223,83,83,0.2)'};
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 `;
 
 const Details = styled.div`
@@ -146,14 +145,14 @@ const Details = styled.div`
 
 const Desc = styled.span`
   font-weight: 600;
-  color: ${theme.colors.ice};
+  color: ${({ theme }) => theme.colors.ice};
   font-size: 0.95rem;
 `;
 
 const CategoryDate = styled.span`
   font-size: 0.8rem;
-  color: ${theme.colors.muted};
-  font-weight: 300;
+  color: ${({ theme }) => theme.colors.muted};
+  font-weight: 400;
   margin-top: 0.15rem;
 `;
 
@@ -166,30 +165,28 @@ const ValueBlock = styled.div`
 const Amount = styled.span`
   font-weight: 700;
   font-size: 1.1rem;
-  color: ${({ $type }) => $type === 'INFLOW' ? theme.colors.success : theme.colors.ice};
-  font-family: 'Outfit', sans-serif;
+  color: ${({ $type, theme }) => $type === 'INFLOW' ? theme.colors.success : theme.colors.ice};
 `;
 
 const DeleteBtn = styled.button`
   background: transparent;
   border: 1px solid transparent;
-  color: ${theme.colors.muted};
+  color: ${({ theme }) => theme.colors.muted};
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: ${theme.radii.sm};
+  border-radius: ${({ theme }) => theme.radii.sm};
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   
   &:hover {
-    color: ${theme.colors.danger};
+    color: ${({ theme }) => theme.colors.danger};
     background: rgba(223, 83, 83, 0.08);
     border-color: rgba(223, 83, 83, 0.2);
     transform: scale(1.05);
   }
 `;
-
 
 export function FinanceiroPage() {
   const { transactions, summary, supportData, isLoading, addTransaction, deleteTransaction } = useFinanceiro();
@@ -219,7 +216,7 @@ export function FinanceiroPage() {
           <h2>Extrato Recente</h2>
         </ExtratoHeader>
         {isLoading ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: theme.colors.muted }}>Carregando...</div>
+          <div style={{ padding: '2rem', textAlign: 'center', color: '#bdaeae' }}>Carregando...</div>
         ) : (
           <List>
             {transactions.map(t => (
@@ -244,7 +241,7 @@ export function FinanceiroPage() {
               </ListItem>
             ))}
             {transactions.length === 0 && (
-              <div style={{ padding: '3rem', textAlign: 'center', color: theme.colors.muted }}>
+              <div style={{ padding: '3rem', textAlign: 'center', color: '#bdaeae' }}>
                 Nenhuma movimentação registrada.
               </div>
             )}

@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { theme } from '../../styles/theme.js';
 
 export function StatCard({ label, value, detail, tone = 'neutral' }) {
   return (
@@ -14,14 +13,14 @@ export function StatCard({ label, value, detail, tone = 'neutral' }) {
 const Card = styled.article`
   min-height: 8.5rem;
   padding: 1.25rem 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: ${theme.radii.md};
-  background: ${({ $tone }) =>
+  border: 1px solid ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.04)'};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ $tone, theme }) =>
     $tone === 'wine'
-      ? 'linear-gradient(135deg, rgba(92, 6, 30, 0.45) 0%, rgba(28, 22, 23, 0.9) 100%)'
-      : 'rgba(28, 22, 23, 0.7)'};
+      ? `linear-gradient(135deg, rgba(92, 6, 30, 0.45) 0%, ${theme.colors.surface} 100%)`
+      : theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.7)'};
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: ${({ theme }) => theme.shadow};
   transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
@@ -33,15 +32,15 @@ const Card = styled.article`
     left: 0;
     right: 0;
     height: 2px;
-    background: ${({ $tone }) => $tone === 'wine' ? theme.colors.wineLight : 'transparent'};
+    background: transparent;
     transition: background 0.3s ease;
   }
 
   span {
     display: block;
-    color: ${theme.colors.muted};
+    color: ${({ theme }) => theme.colors.muted};
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -50,28 +49,27 @@ const Card = styled.article`
     display: block;
     margin-top: 0.8rem;
     font-size: 2.25rem;
-    font-weight: 700;
-    color: ${({ $tone }) => $tone === 'wine' ? theme.colors.ice : theme.colors.gold};
+    font-weight: 800;
+    color: ${({ $tone, theme }) => $tone === 'wine' ? theme.colors.wine : theme.colors.gold};
     letter-spacing: -0.02em;
-    font-family: 'Outfit', sans-serif;
   }
 
   small {
     display: block;
     margin-top: 0.45rem;
-    color: ${theme.colors.mutedDark};
-    font-size: 0.825rem;
+    color: ${({ theme }) => theme.colors.mutedDark};
+    font-size: 0.8rem;
     line-height: 1.5;
+    font-weight: 500;
   }
 
   &:hover {
     transform: translateY(-4px);
     border-color: rgba(197, 165, 92, 0.3);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 15px rgba(197, 165, 92, 0.1);
+    box-shadow: ${({ theme }) => theme.shadow}, 0 0 15px rgba(197, 165, 92, 0.1);
 
     &::after {
-      background: ${theme.colors.goldGradient};
+      background: ${({ theme }) => theme.colors.goldGradient};
     }
   }
 `;
-

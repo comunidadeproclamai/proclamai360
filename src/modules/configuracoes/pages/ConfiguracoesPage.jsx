@@ -1,18 +1,304 @@
-import { Settings } from 'lucide-react';
-import { DomainPage } from '../../../components/common/DomainPage.jsx';
+import { useState } from 'react';
+import styled from 'styled-components';
+import { Settings, Sun, Moon, Palette, Home, CheckCircle2 } from 'lucide-react';
+import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { Button } from '../../../components/common/Button.jsx';
+import { useThemeMode } from '../../../contexts/ThemeModeContext.jsx';
 
 export function ConfiguracoesPage() {
+  const { themeMode, setThemeMode } = useThemeMode();
+  const [churchName, setChurchName] = useState('Comunidade Proclamai');
+  const [address, setAddress] = useState('Avenida Principal, 360 - Centro');
+  const [saveStatus, setSaveStatus] = useState(false);
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    setSaveStatus(true);
+    setTimeout(() => {
+      setSaveStatus(false);
+    }, 2500);
+  };
+
   return (
-    <DomainPage
-      eyebrow="Sistema"
-      title="Configuracoes"
-      description="Espaco para preferencias, dados institucionais e configuracoes simples da plataforma."
-      icon={Settings}
-      nextSteps={[
-        'Centralizar dados basicos da igreja.',
-        'Criar configuracoes por modulo quando necessario.',
-        'Manter permissoes simples nesta fase inicial.',
-      ]}
-    />
+    <PageContainer>
+      <PageHeader
+        eyebrow="Sistema"
+        title="Configurações"
+        description="Gerencie as preferências estéticas, dados institucionais e configurações gerais da plataforma Proclamai 360."
+      />
+
+      <SettingsGrid>
+        {/* Theme Preferences Card */}
+        <SettingsCard>
+          <CardHeader>
+            <Palette size={20} />
+            <h3>Identidade Visual & Tema</h3>
+          </CardHeader>
+          <CardDescription>
+            Escolha a tonalidade do sistema com base na logo. O tema claro utiliza a versão vermelha e o tema escuro utiliza a versão branca com ouro.
+          </CardDescription>
+
+          <ThemeOptions>
+            {/* Dark Theme Selection Card */}
+            <ThemeOptionCard 
+              $active={themeMode === 'dark'} 
+              onClick={() => setThemeMode('dark')}
+              $mode="dark"
+            >
+              <MiniPreview $mode="dark">
+                <MiniLogo src="/logo-dark.png" alt="Proclamai 360" />
+                <span className="dot" />
+              </MiniPreview>
+              <OptionInfo>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Moon size={16} />
+                  <strong>Tema Escuro</strong>
+                </div>
+                <span>Vinho profundo & Ouro sobre Charcoal</span>
+              </OptionInfo>
+              {themeMode === 'dark' && <ActiveBadge />}
+            </ThemeOptionCard>
+
+            {/* Light Theme Selection Card */}
+            <ThemeOptionCard 
+              $active={themeMode === 'light'} 
+              onClick={() => setThemeMode('light')}
+              $mode="light"
+            >
+              <MiniPreview $mode="light">
+                <MiniLogo src="/logo-light.png" alt="Proclamai 360" />
+                <span className="dot" />
+              </MiniPreview>
+              <OptionInfo>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sun size={16} />
+                  <strong>Tema Claro</strong>
+                </div>
+                <span>Vinho profundo & Ouro sobre Off-White</span>
+              </OptionInfo>
+              {themeMode === 'light' && <ActiveBadge />}
+            </ThemeOptionCard>
+          </ThemeOptions>
+        </SettingsCard>
+
+        {/* Institution Data Card */}
+        <SettingsCard>
+          <CardHeader>
+            <Home size={20} />
+            <h3>Dados da Igreja</h3>
+          </CardHeader>
+          <CardDescription>
+            Configure as informações públicas da congregação que serão exibidas nos relatórios e nos tickets gerados.
+          </CardDescription>
+
+          <Form onSubmit={handleSave}>
+            <FormGroup>
+              <Label>Nome da Congregação / Ministério</Label>
+              <Input 
+                type="text" 
+                value={churchName} 
+                onChange={(e) => setChurchName(e.target.value)}
+                placeholder="Ex: Comunidade Proclamai..."
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <Label>Endereço Sede</Label>
+              <Input 
+                type="text" 
+                value={address} 
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Ex: Avenida Principal, 360..."
+              />
+            </FormGroup>
+
+            <ButtonWrapper>
+              <Button type="submit" disabled={saveStatus}>
+                {saveStatus ? <CheckCircle2 size={16} /> : <Settings size={16} />}
+                {saveStatus ? 'Configurações Salvas!' : 'Salvar Preferências'}
+              </Button>
+            </ButtonWrapper>
+          </Form>
+        </SettingsCard>
+      </SettingsGrid>
+    </PageContainer>
   );
 }
+
+const PageContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+`;
+
+const SettingsGrid = styled.section`
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.5rem;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const SettingsCard = styled.article`
+  padding: 1.75rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.75)'};
+  backdrop-filter: blur(10px);
+  box-shadow: ${({ theme }) => theme.shadow};
+  display: flex;
+  flex-direction: column;
+`;
+
+const CardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  
+  svg {
+    color: ${({ theme }) => theme.colors.gold};
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: ${({ theme }) => theme.colors.ice};
+    letter-spacing: -0.01em;
+  }
+`;
+
+const CardDescription = styled.p`
+  margin: 0 0 1.5rem 0;
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-weight: 400;
+`;
+
+const ThemeOptions = styled.div`
+  display: grid;
+  gap: 1rem;
+`;
+
+const ThemeOptionCard = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid ${({ $active, theme }) => $active ? theme.colors.gold : theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  cursor: pointer;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    border-color: ${({ $active, theme }) => $active ? theme.colors.gold : 'rgba(197, 165, 92, 0.3)'};
+    transform: translateY(-2px);
+  }
+`;
+
+const MiniPreview = styled.div`
+  width: 90px;
+  height: 55px;
+  border-radius: ${({ theme }) => theme.radii.sm};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ $mode }) => $mode === 'dark' ? '#120e0f' : '#FAF8F5'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 0.25rem;
+
+  .dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #c5a55c;
+  }
+`;
+
+const MiniLogo = styled.img`
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+`;
+
+const OptionInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+
+  strong {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.ice};
+  }
+
+  span {
+    font-size: 0.78rem;
+    color: ${({ theme }) => theme.colors.muted};
+    font-weight: 400;
+  }
+`;
+
+const ActiveBadge = styled.div`
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.gold};
+  box-shadow: 0 0 10px ${({ theme }) => theme.colors.gold};
+`;
+
+const Form = styled.form`
+  display: grid;
+  gap: 1.25rem;
+`;
+
+const FormGroup = styled.div`
+  display: grid;
+  gap: 0.5rem;
+`;
+
+const Label = styled.label`
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.colors.muted};
+  font-weight: 600;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  min-height: 2.85rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  color: ${({ theme }) => theme.colors.ice};
+  padding: 0 1rem;
+  outline: none;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.gold};
+    background: ${({ theme }) => theme.colors.surface};
+    box-shadow: 0 0 0 3px rgba(197, 165, 92, 0.12);
+  }
+`;
+
+const ButtonWrapper = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+`;

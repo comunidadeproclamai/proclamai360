@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { theme } from '../../../styles/theme.js';
 import { AlertTriangle } from 'lucide-react';
 
 const AvatarWrapper = styled.div`
@@ -11,14 +10,14 @@ const Circle = styled.div`
   width: ${({ $size }) => $size || '48px'};
   height: ${({ $size }) => $size || '48px'};
   border-radius: 50%;
-  background: ${theme.colors.surfaceSoft};
-  border: 2px solid ${theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  border: 2px solid ${({ theme }) => theme.colors.border};
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${theme.colors.ice};
+  color: ${({ theme }) => theme.colors.ice};
   font-weight: 700;
-  font-size: ${({ $size }) => $size ? '1.2rem' : '1rem'};
+  font-size: ${({ $size }) => $size ? '1.1rem' : '0.9rem'};
   letter-spacing: 1px;
 `;
 
@@ -29,8 +28,8 @@ const AllergyBadge = styled.div`
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: ${theme.colors.danger};
-  border: 2px solid ${theme.colors.surface};
+  background: ${({ theme }) => theme.colors.danger};
+  border: 2px solid ${({ theme }) => theme.colors.surface};
   color: white;
   display: flex;
   align-items: center;

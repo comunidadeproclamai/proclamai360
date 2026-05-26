@@ -2,7 +2,6 @@ import { useState } from 'react';
 import styled from 'styled-components';
 import { useInfantilLive } from '../hooks/useInfantilLive.js';
 import { LiveClassroomGrid } from '../components/LiveClassroomGrid.jsx';
-import { theme } from '../../../styles/theme.js';
 import { QrCode, UserPlus, AlertCircle } from 'lucide-react';
 
 const PageContainer = styled.div`
@@ -24,36 +23,40 @@ const TitleBlock = styled.div`
 `;
 
 const Title = styled.h1`
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 800;
   margin: 0;
-  color: ${theme.colors.ice};
-  letter-spacing: -0.02em;
+  color: ${({ theme }) => theme.colors.ice};
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
 `;
 
 const Subtitle = styled.p`
   margin: 0;
-  color: ${theme.colors.mutedDark};
+  color: ${({ theme }) => theme.colors.muted};
   font-size: 1rem;
+  font-weight: 400;
 `;
 
 const CheckinPanel = styled.div`
-  background: ${theme.colors.surface};
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.radii.lg};
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.7)'};
+  backdrop-filter: blur(10px);
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.lg};
   padding: 1.5rem;
   display: flex;
   flex-wrap: wrap;
   gap: 1.5rem;
   align-items: flex-end;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: ${({ theme }) => theme.shadow};
 `;
 
 const PanelTitle = styled.h2`
   width: 100%;
   margin: 0 0 0.5rem 0;
   font-size: 1.1rem;
-  color: ${theme.colors.ice};
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.ice};
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -69,44 +72,46 @@ const FormGroup = styled.div`
 
 const Label = styled.label`
   font-size: 0.85rem;
-  color: ${theme.colors.muted};
-  font-weight: 500;
+  color: ${({ theme }) => theme.colors.muted};
+  font-weight: 600;
+  letter-spacing: 0.02em;
 `;
 
 const Input = styled.input`
   padding: 0.75rem 1rem;
-  background: ${theme.colors.charcoal};
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.radii.md};
-  color: ${theme.colors.ice};
-  font-size: 1rem;
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  color: ${({ theme }) => theme.colors.ice};
+  font-size: 0.95rem;
+  outline: none;
   transition: all 0.2s;
 
   &:focus {
-    outline: none;
-    border-color: ${theme.colors.wine};
-    box-shadow: 0 0 0 2px rgba(138, 31, 61, 0.2);
+    border-color: ${({ theme }) => theme.colors.gold};
+    box-shadow: 0 0 0 3px rgba(197, 165, 92, 0.12);
   }
 `;
 
 const ActionButton = styled.button`
-  background: ${theme.colors.wine};
+  background: ${({ theme }) => theme.colors.wine};
   color: white;
-  border: none;
+  border: 1px solid rgba(197, 165, 92, 0.15);
   padding: 0.75rem 2rem;
-  border-radius: ${theme.radii.md};
+  border-radius: ${({ theme }) => theme.radii.md};
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
-  height: 46px;
-  box-shadow: 0 4px 12px rgba(138, 31, 61, 0.3);
+  height: 44px;
+  box-shadow: 0 4px 15px rgba(92, 6, 30, 0.25);
   transition: all 0.2s;
 
   &:hover {
-    background: ${theme.colors.wineLight};
+    background: ${({ theme }) => theme.colors.wineLight};
+    box-shadow: 0 6px 20px rgba(127, 18, 44, 0.4);
     transform: translateY(-2px);
   }
   
@@ -114,6 +119,7 @@ const ActionButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
   }
 `;
 
@@ -121,6 +127,7 @@ const CodeOverlay = styled.div`
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,14 +135,15 @@ const CodeOverlay = styled.div`
 `;
 
 const CodeCard = styled.div`
-  background: ${theme.colors.surface};
+  background: ${({ theme }) => theme.colors.surface};
   padding: 3rem;
-  border-radius: ${theme.radii.lg};
+  border-radius: ${({ theme }) => theme.radii.lg};
   text-align: center;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  border: 2px solid ${theme.colors.wine};
+  border: 2px solid ${({ theme }) => theme.colors.gold};
+  box-shadow: ${({ theme }) => theme.shadow};
 `;
 
 const BigCode = styled.div`
@@ -143,7 +151,7 @@ const BigCode = styled.div`
   font-family: monospace;
   font-weight: 800;
   letter-spacing: 0.2em;
-  color: ${theme.colors.ice};
+  color: ${({ theme }) => theme.colors.ice};
   margin: 1rem 0;
 `;
 
@@ -208,9 +216,9 @@ export function InfantilPage() {
       {generatedCode && (
         <CodeOverlay onClick={() => setGeneratedCode(null)}>
           <CodeCard onClick={e => e.stopPropagation()}>
-            <h2 style={{ margin: 0, color: theme.colors.muted }}>Ticket Gerado</h2>
+            <h2 style={{ margin: 0, color: '#c5a55c' }}>Ticket Gerado</h2>
             <BigCode>{generatedCode}</BigCode>
-            <p style={{ color: theme.colors.mutedDark, margin: 0 }}>Entregue o adesivo aos pais.<br/>Clique em qualquer lugar para fechar.</p>
+            <p style={{ color: '#8a7779', margin: 0 }}>Entregue o adesivo aos pais.<br/>Clique em qualquer lugar para fechar.</p>
           </CodeCard>
         </CodeOverlay>
       )}
