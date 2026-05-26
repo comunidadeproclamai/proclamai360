@@ -1,0 +1,307 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+
+  // Reverse Relations
+  member               Member?
+  financialTransactions FinancialTransaction[]
+  childCheckinsIn      ChildCheckin[] @relation("CheckedInBy")
+  childCheckinsOut     ChildCheckin[] @relation("CheckedOutBy")
+  auditLogs            AuditLog[]
+
+  @@map("users")
+}
+
+// ------------------------------------------------------
+// DOMAIN: MEMBERS & MINISTRIES
+// ------------------------------------------------------
+model Member {
+  id               String    @id @default(uuid())
+  name             String
+  email            String?   @unique
+  phone            String?
+  cpf              String?   @unique
+  birthDate        DateTime?
+  gender           String?   // "M", "F"
+  photoUrl         String?
+  
+  // Address
+  street           String?
+  number           String?
+  complement       String?
+  neighborhood     String?
+  city             String?
+  state            String?
+  zipCode          String?
+
+  // Ecclesiastical Data
+  status           String    @default("ACTIVE") // ACTIVE, INACTIVE, VISITOR, DISMISSED
+  baptismDate      DateTime?
+  membershipDate   DateTime?
+  congregation     String?
+  notes            String?   @db.Text
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  userId           String?   @unique
+  user             User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  memberMinistries MemberMinistry[]
+  financialTransactions FinancialTransaction[]
+  childGuardians   ChildGuardian[]
+  childCheckins    ChildCheckin[]
+  musicianSkills   MusicianSkill[]
+  worshipLineups   WorshipLineup[]
+
+  @@map("members")
+}
+
+model Ministry {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  
+  members     MemberMinistry[]
+  financialTransactions FinancialTransaction[]
+
+  @@map("ministries")
+}
+
+model MemberMinistry {
+  memberId   String
+  ministryId String
+  role       String? 
+  
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  ministry   Ministry @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, ministryId])
+  @@map("member_ministries")
+}
+
+// ------------------------------------------------------
+// DOMAIN: FINANCIAL
+// ------------------------------------------------------
+model FinancialAccount {
+  id          String             @id @default(uuid())
+  name        String             
+  type        String             // BANK_ACCOUNT, CASH
+  balance     Decimal            @default(0.00) @db.Decimal(12, 2)
+  createdAt   DateTime           @default(now())
+  
+  transactions FinancialTransaction[]
+
+  @@map("financial_accounts")
+}
+
+model FinancialCategory {
+  id          String             @id @default(uuid())
+  name        String             
+  type        String             // INFLOW, OUTFLOW
+  createdAt   DateTime           @default(now())
+  
+  transactions FinancialTransaction[]
+
+  @@map("financial_categories")
+}
+
+model FinancialTransaction {
+  id          String             @id @default(uuid())
+  description String
+  amount      Decimal            @db.Decimal(12, 2)
+  date        DateTime
+  type        String             // INFLOW, OUTFLOW
+  attachment  String?            
+  
+  // Audit
+  createdById String
+  createdBy   User               @relation(fields: [createdById], references: [id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  // Relations
+  accountId   String
+  account     FinancialAccount   @relation(fields: [accountId], references: [id])
+  categoryId  String
+  category    FinancialCategory  @relation(fields: [categoryId], references: [id])
+  
+  memberId    String?
+  member      Member?            @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  ministryId  String?
+  ministry    Ministry?          @relation(fields: [ministryId], references: [id], onDelete: SetNull)
+
+  @@map("financial_transactions")
+}
+
+// ------------------------------------------------------
+// DOMAIN: CHILDREN'S MINISTRY
+// ------------------------------------------------------
+model Child {
+  id              String           @id @default(uuid())
+  name            String
+  birthDate       DateTime
+  allergies       String?          @db.Text
+  specialNeeds    String?          @db.Text 
+  photoUrl        String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  guardians       ChildGuardian[]
+  checkins        ChildCheckin[]
+
+  @@map("children")
+}
+
+model ChildGuardian {
+  childId    String
+  memberId   String
+  relation   String   
+  isPrimary  Boolean  @default(false) 
+
+  child      Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([childId, memberId])
+  @@map("child_guardians")
+}
+
+model ChildCheckin {
+  id           String    @id @default(uuid())
+  securityCode String    
+  checkinTime  DateTime  @default(now())
+  checkoutTime DateTime?
+  
+  // Audit
+  checkedInById  String
+  checkedInBy    User    @relation("CheckedInBy", fields: [checkedInById], references: [id])
+  checkedOutById String?
+  checkedOutBy   User?   @relation("CheckedOutBy", fields: [checkedOutById], references: [id])
+
+  // Relations
+  childId      String
+  child        Child     @relation(fields: [childId], references: [id], onDelete: Cascade)
+  guardianId   String    
+  guardian     Member    @relation(fields: [guardianId], references: [id])
+
+  @@map("child_checkins")
+}
+
+// ------------------------------------------------------
+// DOMAIN: WORSHIP
+// ------------------------------------------------------
+model Song {
+  id          String         @id @default(uuid())
+  title       String
+  artist      String
+  defaultKey  String         
+  bpm         Int?
+  chordsUrl   String?        
+  videoUrl    String?        
+  lyrics      String?        @db.Text
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  setlists    SongInSetlist[]
+
+  @@map("songs")
+}
+
+model MusicianSkill {
+  memberId   String
+  instrument String    
+  level      String?   
+  
+  member     Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, instrument])
+  @@map("musician_skills")
+}
+
+model WorshipScale {
+  id          String             @id @default(uuid())
+  date        DateTime
+  eventName   String             
+  notes       String?            @db.Text
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  lineup      WorshipLineup[]
+  setlist     SongInSetlist[]
+
+  @@map("worship_scales")
+}
+
+model WorshipLineup {
+  scaleId    String
+  memberId   String
+  instrument String            
+  status     String            @default("PENDING") 
+
+  scale      WorshipScale      @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  member     Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([scaleId, memberId, instrument])
+  @@map("worship_lineups")
+}
+
+model SongInSetlist {
+  scaleId    String
+  songId     String
+  order      Int              
+  customKey  String?          
+
+  scale      WorshipScale      @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  song       Song              @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@id([scaleId, songId])
+  @@map("song_in_setlists")
+}
+
+// ------------------------------------------------------
+// DOMAIN: CONFIG & AUDIT
+// ------------------------------------------------------
+model SystemConfig {
+  id           String   @id @default(uuid())
+  churchName   String
+  cnpj         String?
+  phone        String?
+  email        String?
+  street       String?
+  number       String?
+  neighborhood String?
+  city         String?
+  state        String?
+  zipCode      String?
+  logoUrl      String?
+  updatedAt    DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String   
+  details   String   @db.Text
+  timestamp DateTime @default(now())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
+}
