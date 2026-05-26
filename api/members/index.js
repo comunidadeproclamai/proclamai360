@@ -1,8 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-// Prevent instantiating multiple Prisma clients in serverless
-const prisma = global.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
+import { prisma } from '../shared/prisma.js';
 
 export default async function handler(req, res) {
   const { method } = req;

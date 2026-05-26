@@ -15,11 +15,17 @@ export function handleApiError(res, error) {
     console.error(error);
   }
 
-  sendJson(res, error.statusCode || 500, {
+  const payload = {
     error: error.code || 'internal_server_error',
     message: error.message || 'Nao foi possivel concluir a solicitacao.',
-    stack: error.stack
-  });
+  };
+
+  // Only expose stack trace in development
+  if (process.env.NODE_ENV !== 'production') {
+    payload.stack = error.stack;
+  }
+
+  sendJson(res, error.statusCode || 500, payload);
 }
 
 export function createHttpError(statusCode, code, publicMessage) {
