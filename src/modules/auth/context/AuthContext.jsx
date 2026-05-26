@@ -34,9 +34,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const authenticate = useCallback(
-    async (mode, payload) => {
-      const response =
-        mode === 'register' ? await authService.register(payload) : await authService.login(payload);
+    async (credentials) => {
+      const response = await authService.login(credentials);
 
       storeToken(response.token);
       setUser(response.user);

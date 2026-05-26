@@ -44,23 +44,7 @@ export async function login(credentials) {
   return data;
 }
 
-export async function register(payload) {
-  if (isMockAuthEnabled()) {
-    return {
-      user: {
-        ...MOCK_ADMIN,
-        id: 'local-created-user',
-        name: payload.name,
-        email: String(payload.email || '').trim().toLowerCase(),
-        role: 'member',
-      },
-      token: MOCK_TOKEN,
-    };
-  }
 
-  const { data } = await apiClient.post('/auth/register', payload);
-  return data;
-}
 
 export async function getCurrentUser() {
   if (isMockAuthEnabled()) {

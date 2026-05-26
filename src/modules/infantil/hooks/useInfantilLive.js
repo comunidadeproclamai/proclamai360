@@ -1,11 +1,25 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../../../services/apiClient.js';
+import { appConfig } from '../../../config/appConfig.js';
+
+function isMockEnabled() {
+  return import.meta.env.DEV && appConfig.authMode === 'mock';
+}
 
 export function useInfantilLive() {
   const [activeChildren, setActiveChildren] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLive = async () => {
+    if (isMockEnabled()) {
+      setIsLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const stored = localStorage.getItem('proclamai_mock_infantil_live');
+      setActiveChildren(stored ? JSON.parse(stored) : []);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const { data } = await apiClient.get('/infantil/live');
@@ -48,6 +62,33 @@ export function useInfantilLive() {
   }, []);
 
   const addCheckin = async (name, age, allergies) => {
+    if (isMockEnabled()) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const securityCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+      
+      let room = 'Primários';
+      const parsedAge = Number(age);
+      if (parsedAge <= 2) room = 'Berçário';
+      else if (parsedAge <= 5) room = 'Maternal';
+
+      const newChild = {
+        id: Math.random().toString(36).substring(2, 11),
+        name,
+        checkinTime: new Date().toISOString(),
+        securityCode,
+        age: parsedAge,
+        allergies: allergies || null,
+        room
+      };
+
+      const stored = localStorage.getItem('proclamai_mock_infantil_live');
+      const currentList = stored ? JSON.parse(stored) : [];
+      const updatedList = [newChild, ...currentList];
+      localStorage.setItem('proclamai_mock_infantil_live', JSON.stringify(updatedList));
+      setActiveChildren(updatedList);
+      return securityCode;
+    }
+
     try {
       const { data } = await apiClient.post('/infantil/checkin', {
         name,
@@ -63,6 +104,16 @@ export function useInfantilLive() {
   };
 
   const doCheckout = async (id) => {
+    if (isMockEnabled()) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      const stored = localStorage.getItem('proclamai_mock_infantil_live');
+      const currentList = stored ? JSON.parse(stored) : [];
+      const updatedList = currentList.filter(c => c.id !== id);
+      localStorage.setItem('proclamai_mock_infantil_live', JSON.stringify(updatedList));
+      setActiveChildren(updatedList);
+      return;
+    }
+
     try {
       await apiClient.delete(`/infantil/checkin?id=${id}`);
       await fetchLive();

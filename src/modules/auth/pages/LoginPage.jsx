@@ -7,7 +7,6 @@ import { useAuth } from '../hooks/useAuth.js';
 import { useThemeMode } from '../../../contexts/ThemeModeContext.jsx';
 
 const initialForm = {
-  name: '',
   email: '',
   password: '',
 };
@@ -15,7 +14,6 @@ const initialForm = {
 export function LoginPage() {
   const { authenticate, isAuthenticated, isBootstrapping } = useAuth();
   const { themeMode, toggleTheme } = useThemeMode();
-  const [mode, setMode] = useState('login');
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,18 +27,13 @@ export function LoginPage() {
     setForm((currentForm) => ({ ...currentForm, [name]: value }));
   }
 
-  function handleModeChange(nextMode) {
-    setMode(nextMode);
-    setError('');
-  }
-
   async function handleSubmit(event) {
     event.preventDefault();
     setError('');
     setIsSubmitting(true);
 
     try {
-      await authenticate(mode, form);
+      await authenticate(form);
     } catch (requestError) {
       setError(
         requestError.response?.data?.message ||
@@ -73,13 +66,11 @@ export function LoginPage() {
 
       <FormSection>
         <AuthPanel
-          mode={mode}
           form={form}
           error={error}
           isSubmitting={isSubmitting}
           onChange={handleChange}
           onSubmit={handleSubmit}
-          onChangeMode={handleModeChange}
         />
       </FormSection>
     </Page>
