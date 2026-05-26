@@ -1,19 +1,15 @@
 import styled from 'styled-components';
-import { LockKeyhole, LogIn, UserPlus } from 'lucide-react';
+import { LockKeyhole, LogIn } from 'lucide-react';
 import { Button } from '../../../components/common/Button.jsx';
 import { TextField } from '../../../components/forms/TextField.jsx';
 
 export function AuthPanel({
-  mode,
   form,
   error,
   isSubmitting,
   onChange,
   onSubmit,
-  onChangeMode,
 }) {
-  const isRegister = mode === 'register';
-
   return (
     <Panel>
       <PanelHeader>
@@ -22,31 +18,11 @@ export function AuthPanel({
         </IconContainer>
         <div>
           <h1>Área de Acesso</h1>
-          <p>{isRegister ? 'Crie a conta da sua equipe' : 'Entre com suas credenciais'}</p>
+          <p>Entre com suas credenciais</p>
         </div>
       </PanelHeader>
 
-      <ModeSwitch role="tablist" aria-label="Modo de autenticação">
-        <TabButton type="button" data-active={!isRegister} onClick={() => onChangeMode('login')}>
-          Entrar
-        </TabButton>
-        <TabButton type="button" data-active={isRegister} onClick={() => onChangeMode('register')}>
-          Nova Conta
-        </TabButton>
-      </ModeSwitch>
-
       <Form onSubmit={onSubmit}>
-        {isRegister && (
-          <TextField
-            label="Nome"
-            name="name"
-            placeholder="Seu nome completo"
-            autoComplete="name"
-            value={form.name}
-            onChange={onChange}
-          />
-        )}
-
         <TextField
           label="E-mail"
           name="email"
@@ -62,7 +38,7 @@ export function AuthPanel({
           name="password"
           type="password"
           placeholder="••••••••••••"
-          autoComplete={isRegister ? 'new-password' : 'current-password'}
+          autoComplete="current-password"
           value={form.password}
           onChange={onChange}
         />
@@ -70,8 +46,8 @@ export function AuthPanel({
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
         <SubmitButton type="submit" disabled={isSubmitting}>
-          {isRegister ? <UserPlus size={18} /> : <LogIn size={18} />}
-          {isSubmitting ? 'Verificando...' : isRegister ? 'Criar Acesso' : 'Acessar Plataforma'}
+          <LogIn size={18} />
+          {isSubmitting ? 'Verificando...' : 'Acessar Plataforma'}
         </SubmitButton>
       </Form>
     </Panel>
@@ -83,7 +59,7 @@ const Panel = styled.section`
   padding: 2.25rem 2rem;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(28, 22, 23, 0.85)'};
+  background: ${({ theme }) => theme.colors.surface === '#ffffff' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(28, 22, 23, 0.85)'};
   backdrop-filter: blur(20px);
   box-shadow: ${({ theme }) => theme.shadow}, inset 0 1px 0 rgba(255, 255, 255, 0.05);
   position: relative;
@@ -131,39 +107,6 @@ const IconContainer = styled.div`
   background: ${({ theme }) => theme.colors.wineGlow};
   border: 1px solid rgba(127, 18, 44, 0.2);
   color: ${({ theme }) => theme.colors.gold};
-`;
-
-const ModeSwitch = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.4rem;
-  padding: 0.35rem;
-  margin-bottom: 1.75rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.md};
-  background: ${({ theme }) => theme.colors.surfaceSoft};
-`;
-
-const TabButton = styled.button`
-  min-height: 2.5rem;
-  border: 0;
-  border-radius: ${({ theme }) => theme.radii.sm};
-  background: transparent;
-  color: ${({ theme }) => theme.colors.muted};
-  font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-
-  &[data-active='true'] {
-    background: ${({ theme }) => theme.colors.wine};
-    color: #fcfaf7;
-    box-shadow: 0 4px 12px rgba(92, 6, 30, 0.3);
-  }
-
-  &:hover:not([data-active='true']) {
-    color: ${({ theme }) => theme.colors.ice};
-    background: rgba(255, 255, 255, 0.05);
-  }
 `;
 
 const Form = styled.form`

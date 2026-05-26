@@ -1,22 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Settings, Sun, Moon, Palette, Home, CheckCircle2 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Button } from '../../../components/common/Button.jsx';
 import { useThemeMode } from '../../../contexts/ThemeModeContext.jsx';
+import { apiClient } from '../../../services/apiClient.js';
 
 export function ConfiguracoesPage() {
   const { themeMode, setThemeMode } = useThemeMode();
-  const [churchName, setChurchName] = useState('Comunidade Proclamai');
-  const [address, setAddress] = useState('Avenida Principal, 360 - Centro');
+  const [churchName, setChurchName] = useState('');
+  const [address, setAddress] = useState('');
   const [saveStatus, setSaveStatus] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = (e) => {
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const { data } = await apiClient.get('/settings');
+        if (data) {
+          setChurchName(data.churchName || '');
+          setAddress(data.street || '');
+        }
+      } catch (err) {
+        console.error('Erro ao buscar configurações:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadSettings();
+  }, []);
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    setSaveStatus(true);
-    setTimeout(() => {
+    try {
+      setSaveStatus(true);
+      await apiClient.post('/settings', {
+        churchName,
+        street: address
+      });
+      setTimeout(() => {
+        setSaveStatus(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Erro ao salvar preferências:', err);
+      alert('Erro ao salvar as configurações: ' + (err.response?.data?.error || err.message));
       setSaveStatus(false);
-    }, 2500);
+    }
   };
 
   return (
@@ -98,7 +127,8 @@ export function ConfiguracoesPage() {
                 type="text" 
                 value={churchName} 
                 onChange={(e) => setChurchName(e.target.value)}
-                placeholder="Ex: Comunidade Proclamai..."
+                placeholder={loading ? 'Carregando...' : 'Ex: Comunidade Proclamai...'}
+                disabled={loading}
               />
             </FormGroup>
 
@@ -108,12 +138,13 @@ export function ConfiguracoesPage() {
                 type="text" 
                 value={address} 
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Ex: Avenida Principal, 360..."
+                placeholder={loading ? 'Carregando...' : 'Ex: Avenida Principal, 360...'}
+                disabled={loading}
               />
             </FormGroup>
 
             <ButtonWrapper>
-              <Button type="submit" disabled={saveStatus}>
+              <Button type="submit" disabled={saveStatus || loading}>
                 {saveStatus ? <CheckCircle2 size={16} /> : <Settings size={16} />}
                 {saveStatus ? 'Configurações Salvas!' : 'Salvar Preferências'}
               </Button>

@@ -159,12 +159,21 @@ export function InfantilPage() {
   const { activeChildren, isLoading, addCheckin, doCheckout } = useInfantilLive();
   const [formData, setFormData] = useState({ name: '', age: '', allergies: '' });
   const [generatedCode, setGeneratedCode] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCheckin = () => {
+  const handleCheckin = async () => {
     if (!formData.name || !formData.age) return;
-    const code = addCheckin(formData.name, formData.age, formData.allergies);
-    setGeneratedCode(code);
-    setFormData({ name: '', age: '', allergies: '' });
+    try {
+      setIsSubmitting(true);
+      const code = await addCheckin(formData.name, formData.age, formData.allergies);
+      setGeneratedCode(code);
+      setFormData({ name: '', age: '', allergies: '' });
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao realizar check-in: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -184,6 +193,7 @@ export function InfantilPage() {
             placeholder="Nome completo..." 
             value={formData.name}
             onChange={e => setFormData({...formData, name: e.target.value})}
+            disabled={isSubmitting}
           />
         </FormGroup>
         <FormGroup style={{ maxWidth: '120px', minWidth: '100px' }}>
@@ -193,6 +203,7 @@ export function InfantilPage() {
             placeholder="Anos" 
             value={formData.age}
             onChange={e => setFormData({...formData, age: e.target.value})}
+            disabled={isSubmitting}
           />
         </FormGroup>
         <FormGroup>
@@ -201,10 +212,11 @@ export function InfantilPage() {
             placeholder="Nenhuma (Opcional)" 
             value={formData.allergies}
             onChange={e => setFormData({...formData, allergies: e.target.value})}
+            disabled={isSubmitting}
           />
         </FormGroup>
-        <ActionButton onClick={handleCheckin} disabled={!formData.name || !formData.age}>
-          <QrCode size={20} /> Gerar Ticket
+        <ActionButton onClick={handleCheckin} disabled={!formData.name || !formData.age || isSubmitting}>
+          <QrCode size={20} /> {isSubmitting ? 'Gerando...' : 'Gerar Ticket'}
         </ActionButton>
       </CheckinPanel>
 
