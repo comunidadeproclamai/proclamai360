@@ -12,27 +12,34 @@ export function PageHeader({ eyebrow, title, description }) {
 }
 
 const HeaderBlock = styled.div`
-  margin-bottom: 1.35rem;
+  margin-bottom: 2.25rem;
 
   h1 {
     margin: 0;
-    font-size: clamp(1.8rem, 3vw, 2.7rem);
-    letter-spacing: 0;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 700;
+    color: ${theme.colors.ice};
+    letter-spacing: -0.02em;
   }
 
   p {
-    max-width: 42rem;
-    margin: 0.6rem 0 0;
+    max-width: 44rem;
+    margin: 0.65rem 0 0;
     color: ${theme.colors.muted};
-    line-height: 1.6;
+    font-size: 1rem;
+    line-height: 1.65;
+    font-weight: 300;
   }
 `;
 
 const Eyebrow = styled.span`
   display: block;
-  margin-bottom: 0.35rem;
-  color: ${theme.colors.wineLight};
-  font-size: 0.76rem;
-  font-weight: 800;
+  margin-bottom: 0.5rem;
+  color: ${theme.colors.gold};
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.1em;
 `;
+

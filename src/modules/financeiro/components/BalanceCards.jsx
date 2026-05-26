@@ -11,18 +11,38 @@ const Grid = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${theme.colors.surface};
-  border: 1px solid ${theme.colors.border};
+  background: rgba(28, 22, 23, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: ${theme.radii.lg};
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: transparent;
+    transition: background 0.3s ease;
+  }
 
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    border-color: rgba(197, 165, 92, 0.25);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 15px rgba(197, 165, 92, 0.05);
+
+    &::after {
+      background: ${theme.colors.goldGradient};
+    }
   }
 `;
 
@@ -34,9 +54,11 @@ const CardHeader = styled.div`
 
 const Title = styled.h3`
   margin: 0;
-  font-size: 0.95rem;
-  color: ${theme.colors.mutedDark};
-  font-weight: 500;
+  font-size: 0.8rem;
+  color: ${theme.colors.muted};
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 `;
 
 const IconWrapper = styled.div`
@@ -48,13 +70,23 @@ const IconWrapper = styled.div`
   justify-content: center;
   background: ${({ $bg }) => $bg};
   color: ${({ $color }) => $color};
+  border: 1px solid ${({ $color }) => rgba($color, 0.15)};
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 `;
+
+function rgba(hex, opacity) {
+  // Simple helper to add border opacity
+  return hex === theme.colors.warning ? `rgba(212, 162, 63, ${opacity})` :
+         hex === theme.colors.success ? `rgba(60, 168, 118, ${opacity})` :
+         `rgba(223, 83, 83, ${opacity})`;
+}
 
 const Value = styled.div`
   font-size: 2rem;
   font-weight: 700;
   color: ${theme.colors.ice};
   letter-spacing: -0.02em;
+  font-family: 'Outfit', sans-serif;
 `;
 
 export function BalanceCards({ summary, isLoading }) {
@@ -73,17 +105,17 @@ export function BalanceCards({ summary, isLoading }) {
       <Card>
         <CardHeader>
           <Title>Saldo Atual em Caixa</Title>
-          <IconWrapper $bg="rgba(214, 168, 79, 0.1)" $color={theme.colors.warning}>
+          <IconWrapper $bg="rgba(212, 162, 63, 0.08)" $color={theme.colors.warning}>
             <Wallet size={20} />
           </IconWrapper>
         </CardHeader>
-        <Value>{formatCurrency(summary.balance)}</Value>
+        <Value style={{ color: theme.colors.gold }}>{formatCurrency(summary.balance)}</Value>
       </Card>
 
       <Card>
         <CardHeader>
           <Title>Entradas do Mês</Title>
-          <IconWrapper $bg="rgba(70, 178, 128, 0.1)" $color={theme.colors.success}>
+          <IconWrapper $bg="rgba(60, 168, 118, 0.08)" $color={theme.colors.success}>
             <TrendingUp size={20} />
           </IconWrapper>
         </CardHeader>
@@ -93,7 +125,7 @@ export function BalanceCards({ summary, isLoading }) {
       <Card>
         <CardHeader>
           <Title>Saídas do Mês</Title>
-          <IconWrapper $bg="rgba(225, 93, 93, 0.1)" $color={theme.colors.danger}>
+          <IconWrapper $bg="rgba(223, 83, 83, 0.08)" $color={theme.colors.danger}>
             <TrendingDown size={20} />
           </IconWrapper>
         </CardHeader>
@@ -102,3 +134,4 @@ export function BalanceCards({ summary, isLoading }) {
     </Grid>
   );
 }
+

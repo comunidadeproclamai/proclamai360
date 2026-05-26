@@ -5,10 +5,11 @@ import { Trash2, Edit2, User } from 'lucide-react';
 const TableContainer = styled.div`
   width: 100%;
   overflow-x: auto;
-  background: ${theme.colors.surface};
-  border: 1px solid ${theme.colors.border};
+  background: rgba(28, 22, 23, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: ${theme.radii.md};
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 `;
 
 const Table = styled.table`
@@ -18,20 +19,22 @@ const Table = styled.table`
 `;
 
 const Th = styled.th`
-  padding: 1rem;
-  font-size: 0.875rem;
-  color: ${theme.colors.mutedDark};
-  border-bottom: 1px solid ${theme.colors.border};
-  font-weight: 500;
+  padding: 1.15rem 1.25rem;
+  font-size: 0.75rem;
+  color: ${theme.colors.gold};
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  background: rgba(18, 14, 15, 0.3);
 `;
 
 const Td = styled.td`
-  padding: 1rem;
+  padding: 1.15rem 1.25rem;
   font-size: 0.9rem;
-  border-bottom: 1px solid ${theme.colors.border};
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   vertical-align: middle;
+  color: ${theme.colors.ice};
 `;
 
 const AvatarContainer = styled.div`
@@ -41,14 +44,16 @@ const AvatarContainer = styled.div`
 `;
 
 const AvatarFallback = styled.div`
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: ${theme.colors.surfaceSoft};
+  background: ${theme.colors.wineGlow};
+  border: 1px solid rgba(127, 18, 44, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${theme.colors.muted};
+  color: ${theme.colors.gold};
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 `;
 
 const NameCol = styled.div`
@@ -57,55 +62,71 @@ const NameCol = styled.div`
 `;
 
 const NameText = styled.span`
-  font-weight: 500;
+  font-weight: 600;
   color: ${theme.colors.ice};
+  font-size: 0.95rem;
 `;
 
 const EmailText = styled.span`
   font-size: 0.8rem;
-  color: ${theme.colors.mutedDark};
+  color: ${theme.colors.muted};
+  font-weight: 300;
 `;
 
 const Badge = styled.span`
-  padding: 0.25rem 0.75rem;
+  padding: 0.3rem 0.85rem;
   border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  
   background: ${({ $status }) => 
-    $status === 'ACTIVE' ? 'rgba(70, 178, 128, 0.15)' :
-    $status === 'VISITOR' ? 'rgba(214, 168, 79, 0.15)' :
-    'rgba(143, 131, 131, 0.15)'
+    $status === 'ACTIVE' ? 'rgba(60, 168, 118, 0.08)' :
+    $status === 'VISITOR' ? 'rgba(212, 162, 63, 0.08)' :
+    'rgba(255, 255, 255, 0.02)'
   };
   color: ${({ $status }) => 
     $status === 'ACTIVE' ? theme.colors.success :
     $status === 'VISITOR' ? theme.colors.warning :
     theme.colors.muted
   };
+  border: 1px solid ${({ $status }) => 
+    $status === 'ACTIVE' ? 'rgba(60, 168, 118, 0.2)' :
+    $status === 'VISITOR' ? 'rgba(212, 162, 63, 0.2)' :
+    'rgba(255, 255, 255, 0.05)'
+  };
 `;
 
 const ActionButton = styled.button`
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: ${theme.colors.muted};
   padding: 0.5rem;
   border-radius: ${theme.radii.sm};
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
   &:hover {
-    background: ${theme.colors.surfaceSoft};
-    color: ${theme.colors.ice};
+    background: rgba(255, 255, 255, 0.03);
+    color: ${({ title }) => title === 'Excluir' ? theme.colors.danger : theme.colors.goldLight};
+    border-color: ${({ title }) => title === 'Excluir' ? 'rgba(223, 83, 83, 0.2)' : 'rgba(197, 165, 92, 0.15)'};
+    transform: scale(1.05);
   }
 `;
 
 const FlexRow = styled.div`
   display: flex;
-  gap: 0.5rem;
+  gap: 0.6rem;
 `;
 
 const EmptyState = styled.div`
-  padding: 3rem;
+  padding: 4rem;
   text-align: center;
-  color: ${theme.colors.mutedDark};
+  color: ${theme.colors.muted};
+  font-size: 0.95rem;
+  font-weight: 300;
 `;
 
 export function MembersTable({ members, isLoading, onDelete }) {
