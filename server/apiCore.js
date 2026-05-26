@@ -775,9 +775,9 @@ async function dispatch(req, res) {
   });
 }
 
-export default async function handler(req, res) {
+async function runApiHandler(res, callback) {
   try {
-    return await dispatch(req, res);
+    return await callback();
   } catch (error) {
     if (error.code === 'P2025') {
       return sendJson(res, 404, {
@@ -788,4 +788,103 @@ export default async function handler(req, res) {
 
     return handleApiError(res, error);
   }
+}
+
+export function healthHandler(req, res) {
+  return runApiHandler(res, () => handleHealth(req, res));
+}
+
+export function authHandler(req, res) {
+  if (req.query.action === 'login') {
+    return runApiHandler(res, () => handleLogin(req, res));
+  }
+
+  if (req.query.action === 'register') {
+    return runApiHandler(res, () => handleRegister(req, res));
+  }
+
+  return sendJson(res, 404, {
+    error: 'not_found',
+    message: 'Rota de autenticacao nao encontrada.',
+  });
+}
+
+export function usersHandler(req, res) {
+  if (req.query.action === 'me') {
+    return runApiHandler(res, () => handleCurrentUser(req, res));
+  }
+
+  return sendJson(res, 404, {
+    error: 'not_found',
+    message: 'Rota de usuario nao encontrada.',
+  });
+}
+
+export function membersHandler(req, res) {
+  return runApiHandler(res, () => handleMembers(req, res));
+}
+
+export function memberByIdHandler(req, res) {
+  return runApiHandler(res, () => handleMemberById(req, res, req.query.id));
+}
+
+export function settingsHandler(req, res) {
+  return runApiHandler(res, () => handleSettings(req, res));
+}
+
+export function infantilHandler(req, res) {
+  if (req.query.action === 'live') {
+    return runApiHandler(res, () => handleInfantilLive(req, res));
+  }
+
+  if (req.query.action === 'checkin') {
+    return runApiHandler(res, () => handleInfantilCheckin(req, res));
+  }
+
+  return sendJson(res, 404, {
+    error: 'not_found',
+    message: 'Rota infantil nao encontrada.',
+  });
+}
+
+export function financialHandler(req, res) {
+  if (req.query.route === 'summary') {
+    return runApiHandler(res, () => handleFinancialSummary(req, res));
+  }
+
+  if (req.query.route === 'support-data') {
+    return runApiHandler(res, () => handleFinancialSupportData(req, res));
+  }
+
+  if (req.query.route === 'transactions') {
+    return runApiHandler(res, () => handleFinancialTransactions(req, res));
+  }
+
+  return sendJson(res, 404, {
+    error: 'not_found',
+    message: 'Rota financeira nao encontrada.',
+  });
+}
+
+export function financialTransactionByIdHandler(req, res) {
+  return runApiHandler(res, () => handleFinancialTransactionById(req, res, req.query.id));
+}
+
+export function louvorHandler(req, res) {
+  if (req.query.resource === 'songs') {
+    return runApiHandler(res, () => handleSongs(req, res));
+  }
+
+  if (req.query.resource === 'scales') {
+    return runApiHandler(res, () => handleScales(req, res));
+  }
+
+  return sendJson(res, 404, {
+    error: 'not_found',
+    message: 'Rota de louvor nao encontrada.',
+  });
+}
+
+export default async function handler(req, res) {
+  return runApiHandler(res, () => dispatch(req, res));
 }
