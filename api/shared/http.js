@@ -17,7 +17,8 @@ export function handleApiError(res, error) {
 
   sendJson(res, error.statusCode || 500, {
     error: error.code || 'internal_server_error',
-    message: error.publicMessage || 'Nao foi possivel concluir a solicitacao.',
+    message: error.message || 'Nao foi possivel concluir a solicitacao.',
+    stack: error.stack
   });
 }
 
