@@ -1,9 +1,37 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '../../../services/apiClient.js';
-import { appConfig } from '../../../config/appConfig.js';
 
-function isMockEnabled() {
-  return import.meta.env.DEV && appConfig.authMode === 'mock';
+function getAgeFromBirthDate(value) {
+  const birthDate = new Date(value);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDelta = today.getMonth() - birthDate.getMonth();
+
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  return Math.max(0, age);
+}
+
+function getRoomByAge(age) {
+  if (age <= 2) return 'Bercario';
+  if (age <= 5) return 'Maternal';
+  return 'Primarios';
+}
+
+function mapLiveCheckin(item) {
+  const age = getAgeFromBirthDate(item.child.birthDate);
+
+  return {
+    id: item.id,
+    name: item.child.name,
+    checkinTime: item.checkinTime,
+    securityCode: item.securityCode,
+    age,
+    allergies: item.child.allergies,
+    room: getRoomByAge(age),
+  };
 }
 
 export function useInfantilLive() {
@@ -11,47 +39,13 @@ export function useInfantilLive() {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLive = async () => {
-    if (isMockEnabled()) {
-      setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const stored = localStorage.getItem('proclamai_mock_infantil_live');
-      setActiveChildren(stored ? JSON.parse(stored) : []);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       setIsLoading(true);
       const { data } = await apiClient.get('/infantil/live');
-      
-      const mapped = data.map(item => {
-        const birthDate = new Date(item.child.birthDate);
-        let age = new Date().getFullYear() - birthDate.getFullYear();
-        const m = new Date().getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && new Date().getDate() < birthDate.getDate())) {
-          age--;
-        }
-        age = Math.max(0, age);
-
-        // Determine room based on age
-        let room = 'Primários';
-        if (age <= 2) room = 'Berçário';
-        else if (age <= 5) room = 'Maternal';
-
-        return {
-          id: item.id, // check-in ID for checkout
-          name: item.child.name,
-          checkinTime: item.checkinTime,
-          securityCode: item.securityCode,
-          age,
-          allergies: item.child.allergies,
-          room
-        };
-      });
-
-      setActiveChildren(mapped);
+      setActiveChildren(data.map(mapLiveCheckin));
     } catch (error) {
-      console.error('Erro ao carregar crianças ativas:', error);
+      console.error('Erro ao carregar criancas ativas:', error);
+      setActiveChildren([]);
     } finally {
       setIsLoading(false);
     }
@@ -62,38 +56,11 @@ export function useInfantilLive() {
   }, []);
 
   const addCheckin = async (name, age, allergies) => {
-    if (isMockEnabled()) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const securityCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-      
-      let room = 'Primários';
-      const parsedAge = Number(age);
-      if (parsedAge <= 2) room = 'Berçário';
-      else if (parsedAge <= 5) room = 'Maternal';
-
-      const newChild = {
-        id: Math.random().toString(36).substring(2, 11),
-        name,
-        checkinTime: new Date().toISOString(),
-        securityCode,
-        age: parsedAge,
-        allergies: allergies || null,
-        room
-      };
-
-      const stored = localStorage.getItem('proclamai_mock_infantil_live');
-      const currentList = stored ? JSON.parse(stored) : [];
-      const updatedList = [newChild, ...currentList];
-      localStorage.setItem('proclamai_mock_infantil_live', JSON.stringify(updatedList));
-      setActiveChildren(updatedList);
-      return securityCode;
-    }
-
     try {
       const { data } = await apiClient.post('/infantil/checkin', {
         name,
         age: Number(age),
-        allergies: allergies || null
+        allergies: allergies || null,
       });
       await fetchLive();
       return data.securityCode;
@@ -104,16 +71,6 @@ export function useInfantilLive() {
   };
 
   const doCheckout = async (id) => {
-    if (isMockEnabled()) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const stored = localStorage.getItem('proclamai_mock_infantil_live');
-      const currentList = stored ? JSON.parse(stored) : [];
-      const updatedList = currentList.filter(c => c.id !== id);
-      localStorage.setItem('proclamai_mock_infantil_live', JSON.stringify(updatedList));
-      setActiveChildren(updatedList);
-      return;
-    }
-
     try {
       await apiClient.delete(`/infantil/checkin?id=${id}`);
       await fetchLive();
@@ -128,6 +85,6 @@ export function useInfantilLive() {
     isLoading,
     addCheckin,
     doCheckout,
-    refresh: fetchLive
+    refresh: fetchLive,
   };
 }

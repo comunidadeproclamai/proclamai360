@@ -34,23 +34,9 @@ DIRECT_URL="postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres"
 JWT_SECRET="replace-with-a-strong-secret"
 JWT_EXPIRES_IN="7d"
 VITE_API_BASE_URL="/api"
-VITE_AUTH_MODE="api"
 ```
 
 Use `DATABASE_URL` com pooler do Supabase para runtime serverless. Use `DIRECT_URL` para migrations Prisma.
-
-Para entrar localmente antes de configurar Supabase, use:
-
-```env
-VITE_AUTH_MODE="mock"
-```
-
-Credenciais locais:
-
-- E-mail: `renato@proclamai.com.br`
-- Senha: `adm123`
-
-Esse modo so funciona no servidor de desenvolvimento do Vite. Em build de producao, o app usa a API real.
 
 ## Banco de dados
 
@@ -62,7 +48,7 @@ npm run db:seed
 Usuarios administradores do seed:
 
 - E-mail: `renato@proclamai.com.br`
-- Senha: `adm123`
+- Senha: `admin123@`
 - E-mail: `admin@proclamai.local`
 - Senha: `proclamai123`
 

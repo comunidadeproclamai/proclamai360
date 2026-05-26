@@ -6,7 +6,7 @@ if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
 export default async function handler(req, res) {
   const { method, query: { id } } = req;
 
-  if (process.env.VITE_AUTH_MODE === 'mock' || !process.env.DATABASE_URL) {
+  if (!process.env.DATABASE_URL) {
     return res.status(503).json({ error: 'API Offline' });
   }
 

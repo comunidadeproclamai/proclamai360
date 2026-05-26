@@ -7,7 +7,7 @@ const generateCode = () => Math.random().toString(36).substring(2, 6).toUpperCas
 export default async function handler(req, res) {
   const { method } = req;
 
-  if (process.env.VITE_AUTH_MODE === 'mock' || !process.env.DATABASE_URL) {
+  if (!process.env.DATABASE_URL) {
     return res.status(503).json({ error: 'API Offline' });
   }
 

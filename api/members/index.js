@@ -3,11 +3,9 @@ import { prisma } from '../shared/prisma.js';
 export default async function handler(req, res) {
   const { method } = req;
 
-  // Em modo Mock ou se não houver DATABASE_URL, podemos retornar um 503 claro ou mock
-  if (process.env.VITE_AUTH_MODE === 'mock' || !process.env.DATABASE_URL) {
+  if (!process.env.DATABASE_URL) {
     return res.status(503).json({ 
       error: 'API temporariamente indisponível. Banco de dados não configurado.',
-      hint: 'O frontend deve estar usando dados mockados em memória no momento.'
     });
   }
 
