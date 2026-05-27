@@ -1,3 +1,6 @@
-import { healthHandler } from '../../server/apiCore.js';
+import { handleHealth } from '../../server/handlers/health.js';
+import { runApiHandler } from '../../server/lib/http.js';
 
-export default healthHandler;
+export default function handler(req, res) {
+  return runApiHandler(res, () => handleHealth(req, res));
+}

@@ -1,3 +1,6 @@
-import { usersHandler } from '../../server/apiCore.js';
+import { usersHandler } from '../../server/handlers/users.js';
+import { runApiHandler } from '../../server/lib/http.js';
 
-export default usersHandler;
+export default function handler(req, res) {
+  return runApiHandler(res, () => usersHandler(req, res));
+}

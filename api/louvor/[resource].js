@@ -1,3 +1,6 @@
-import { louvorHandler } from '../../server/apiCore.js';
+import { louvorHandler } from '../../server/handlers/louvor.js';
+import { runApiHandler } from '../../server/lib/http.js';
 
-export default louvorHandler;
+export default function handler(req, res) {
+  return runApiHandler(res, () => louvorHandler(req, res));
+}

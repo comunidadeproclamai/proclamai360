@@ -45,7 +45,6 @@ const AllergyBadge = styled.div`
 `;
 
 export function KidAvatar({ name, hasAllergies, size }) {
-  // Extract initials (e.g. "Pedro Alves" -> "PA")
   const getInitials = (n) => {
     if (!n) return '??';
     const parts = n.split(' ');

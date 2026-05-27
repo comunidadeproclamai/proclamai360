@@ -1,0 +1,154 @@
+import { getAuthenticatedUser } from '../lib/auth.js';
+import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
+import { prisma, requireDatabase } from '../lib/prisma.js';
+
+async function handleSummary(req, res) {
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+  requireDatabase();
+  await getAuthenticatedUser(req);
+
+  res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=59');
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [inflowAgg, outflowAgg, accounts] = await Promise.all([
+    prisma.financialTransaction.aggregate({
+      where: { type: 'INFLOW', date: { gte: startOfMonth } },
+      _sum: { amount: true },
+    }),
+    prisma.financialTransaction.aggregate({
+      where: { type: 'OUTFLOW', date: { gte: startOfMonth } },
+      _sum: { amount: true },
+    }),
+    prisma.financialAccount.findMany({ select: { balance: true } }),
+  ]);
+
+  return sendJson(res, 200, {
+    totalInflow: Number(inflowAgg._sum.amount || 0),
+    totalOutflow: Number(outflowAgg._sum.amount || 0),
+    balance: accounts.reduce((acc, curr) => acc + Number(curr.balance), 0),
+  });
+}
+
+async function handleSupportData(req, res) {
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+  requireDatabase();
+  await getAuthenticatedUser(req);
+
+  const [accounts, categories] = await Promise.all([
+    prisma.financialAccount.findMany({
+      select: { id: true, name: true, type: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.financialCategory.findMany({
+      select: { id: true, name: true, type: true },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
+
+  return sendJson(res, 200, { accounts, categories });
+}
+
+async function handleTransactions(req, res) {
+  requireDatabase();
+  await getAuthenticatedUser(req);
+
+  if (req.method === 'GET') {
+    const transactions = await prisma.financialTransaction.findMany({
+      orderBy: { date: 'desc' },
+      take: 100,
+      include: {
+        category: { select: { name: true } },
+        account: { select: { name: true } },
+        createdBy: { select: { name: true } },
+      },
+    });
+
+    return sendJson(
+      res,
+      200,
+      transactions.map((transaction) => ({
+        ...transaction,
+        category: transaction.category.name,
+        account: transaction.account.name,
+        createdBy: transaction.createdBy.name,
+      })),
+    );
+  }
+
+  if (req.method === 'POST') {
+    const { description, amount, type, categoryId, accountId, createdById } = req.body || {};
+    if (!description || !amount || !accountId || !categoryId || !createdById) {
+      throw createHttpError(400, 'validation_error', 'Campos obrigatorios faltando.');
+    }
+
+    const amountModifier = type === 'OUTFLOW' ? { decrement: amount } : { increment: amount };
+    const [transaction, updatedAccount] = await prisma.$transaction([
+      prisma.financialTransaction.create({
+        data: {
+          description,
+          amount,
+          type,
+          date: new Date(),
+          categoryId,
+          accountId,
+          createdById,
+        },
+      }),
+      prisma.financialAccount.update({
+        where: { id: accountId },
+        data: { balance: amountModifier },
+      }),
+    ]);
+
+    return sendJson(res, 201, { transaction, accountBalance: updatedAccount.balance });
+  }
+
+  return methodNotAllowed(res, ['GET', 'POST']);
+}
+
+export async function financialTransactionByIdHandler(req, res) {
+  if (req.method !== 'DELETE') return methodNotAllowed(res, ['DELETE']);
+  requireDatabase();
+  await getAuthenticatedUser(req);
+
+  const { id } = req.query;
+  const transaction = await prisma.financialTransaction.findUnique({ where: { id } });
+  if (!transaction) {
+    throw createHttpError(404, 'not_found', 'Transacao nao encontrada.');
+  }
+
+  const amountModifier =
+    transaction.type === 'OUTFLOW'
+      ? { increment: transaction.amount }
+      : { decrement: transaction.amount };
+
+  await prisma.$transaction([
+    prisma.financialTransaction.delete({ where: { id } }),
+    prisma.financialAccount.update({
+      where: { id: transaction.accountId },
+      data: { balance: amountModifier },
+    }),
+  ]);
+
+  return sendJson(res, 200, { success: true });
+}
+
+export function financialHandler(req, res) {
+  if (req.query.route === 'summary') {
+    return handleSummary(req, res);
+  }
+
+  if (req.query.route === 'support-data') {
+    return handleSupportData(req, res);
+  }
+
+  if (req.query.route === 'transactions') {
+    return handleTransactions(req, res);
+  }
+
+  return sendJson(res, 404, {
+    error: 'not_found',
+    message: 'Rota financeira nao encontrada.',
+  });
+}

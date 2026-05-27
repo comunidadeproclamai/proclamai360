@@ -1,3 +1,6 @@
-import { settingsHandler } from '../../server/apiCore.js';
+import { settingsHandler } from '../../server/handlers/settings.js';
+import { runApiHandler } from '../../server/lib/http.js';
 
-export default settingsHandler;
+export default function handler(req, res) {
+  return runApiHandler(res, () => settingsHandler(req, res));
+}

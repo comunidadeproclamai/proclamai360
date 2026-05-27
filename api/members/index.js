@@ -1,3 +1,6 @@
-import { membersHandler } from '../../server/apiCore.js';
+import { membersHandler } from '../../server/handlers/members.js';
+import { runApiHandler } from '../../server/lib/http.js';
 
-export default membersHandler;
+export default function handler(req, res) {
+  return runApiHandler(res, () => membersHandler(req, res));
+}

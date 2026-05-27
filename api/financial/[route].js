@@ -1,3 +1,6 @@
-import { financialHandler } from '../../server/apiCore.js';
+import { financialHandler } from '../../server/handlers/financial.js';
+import { runApiHandler } from '../../server/lib/http.js';
 
-export default financialHandler;
+export default function handler(req, res) {
+  return runApiHandler(res, () => financialHandler(req, res));
+}
