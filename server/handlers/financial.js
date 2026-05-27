@@ -1,12 +1,14 @@
 import { auditAction } from '../lib/audit.js';
-import { getAuthenticatedUser, requireRole } from '../lib/auth.js';
+import { getAuthenticatedUser, requirePermission } from '../lib/auth.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
+import { PERMISSIONS } from '../lib/permissions.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
 
 async function handleSummary(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
   requireDatabase();
-  await getAuthenticatedUser(req);
+  const authenticatedUser = await getAuthenticatedUser(req);
+  requirePermission(authenticatedUser, PERMISSIONS.FINANCIAL_READ);
 
   res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=59');
 
@@ -34,7 +36,8 @@ async function handleSummary(req, res) {
 async function handleSupportData(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
   requireDatabase();
-  await getAuthenticatedUser(req);
+  const authenticatedUser = await getAuthenticatedUser(req);
+  requirePermission(authenticatedUser, PERMISSIONS.FINANCIAL_READ);
 
   const [accounts, categories] = await Promise.all([
     prisma.financialAccount.findMany({
@@ -55,6 +58,8 @@ async function handleTransactions(req, res) {
   const authenticatedUser = await getAuthenticatedUser(req);
 
   if (req.method === 'GET') {
+    requirePermission(authenticatedUser, PERMISSIONS.FINANCIAL_READ);
+
     const transactions = await prisma.financialTransaction.findMany({
       orderBy: { date: 'desc' },
       take: 100,
@@ -78,7 +83,7 @@ async function handleTransactions(req, res) {
   }
 
   if (req.method === 'POST') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.FINANCIAL_WRITE);
 
     const { description, amount, type, categoryId, accountId } = req.body || {};
     if (!description || !amount || !accountId || !categoryId) {
@@ -131,7 +136,7 @@ export async function financialTransactionByIdHandler(req, res) {
   if (req.method !== 'DELETE') return methodNotAllowed(res, ['DELETE']);
   requireDatabase();
   const authenticatedUser = await getAuthenticatedUser(req);
-  requireRole(authenticatedUser, 'admin');
+  requirePermission(authenticatedUser, PERMISSIONS.FINANCIAL_WRITE);
 
   const { id } = req.query;
   const transaction = await prisma.financialTransaction.findUnique({ where: { id } });

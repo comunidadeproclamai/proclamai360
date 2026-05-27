@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { createHttpError } from './http.js';
+import { requirePermission } from './permissions.js';
 import { prisma } from './prisma.js';
 
 const DEFAULT_EXPIRES_IN = '7d';
@@ -60,15 +61,7 @@ export async function getAuthenticatedUser(req) {
   }
 }
 
-export function requireRole(user, allowedRoles) {
-  const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
-
-  if (!user || !roles.includes(user.role)) {
-    throw createHttpError(403, 'forbidden', 'Voce nao tem permissao para executar esta acao.');
-  }
-
-  return user;
-}
+export { requirePermission };
 
 export async function ensureAuthenticatedInProduction(req) {
   try {

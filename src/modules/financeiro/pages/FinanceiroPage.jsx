@@ -5,6 +5,8 @@ import { BalanceCards } from '../components/BalanceCards.jsx';
 import { TransactionModal } from '../components/TransactionModal.jsx';
 import { formatCurrency } from '../../../utils/currency.js';
 import { Plus, ArrowDownLeft, ArrowUpRight, Trash2 } from 'lucide-react';
+import { useAuth } from '../../auth/hooks/useAuth.js';
+import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
 
 const PageContainer = styled.div`
   display: flex;
@@ -189,6 +191,8 @@ const DeleteBtn = styled.button`
 `;
 
 export function FinanceiroPage() {
+  const { user } = useAuth();
+  const canManageFinance = hasPermission(user, PERMISSIONS.FINANCIAL_WRITE);
   const { transactions, summary, supportData, isLoading, addTransaction, deleteTransaction } = useFinanceiro();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -203,10 +207,12 @@ export function FinanceiroPage() {
           <Title>Financeiro</Title>
           <Subtitle>Acompanhe saldos, dízimos, ofertas e despesas.</Subtitle>
         </TitleBlock>
+        {canManageFinance && (
         <PrimaryButton onClick={() => setIsModalOpen(true)}>
           <Plus size={20} />
           Lançar Valor
         </PrimaryButton>
+        )}
       </Header>
 
       <BalanceCards summary={summary} isLoading={isLoading} />
@@ -234,9 +240,11 @@ export function FinanceiroPage() {
                   <Amount $type={t.type}>
                     {t.type === 'INFLOW' ? '+' : '-'} {formatCurrency(t.amount)}
                   </Amount>
+                  {canManageFinance && (
                   <DeleteBtn onClick={() => deleteTransaction(t.id)}>
                     <Trash2 size={16} />
                   </DeleteBtn>
+                  )}
                 </ValueBlock>
               </ListItem>
             ))}
@@ -249,7 +257,7 @@ export function FinanceiroPage() {
         )}
       </ExtratoContainer>
 
-      {isModalOpen && (
+      {isModalOpen && canManageFinance && (
         <TransactionModal 
           onClose={() => setIsModalOpen(false)}
           onSave={addTransaction}

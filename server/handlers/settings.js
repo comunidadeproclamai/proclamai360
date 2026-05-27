@@ -1,6 +1,7 @@
 import { auditAction } from '../lib/audit.js';
-import { getAuthenticatedUser, requireRole } from '../lib/auth.js';
+import { getAuthenticatedUser, requirePermission } from '../lib/auth.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
+import { PERMISSIONS } from '../lib/permissions.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
 
 export async function settingsHandler(req, res) {
@@ -8,6 +9,8 @@ export async function settingsHandler(req, res) {
   const authenticatedUser = await getAuthenticatedUser(req);
 
   if (req.method === 'GET') {
+    requirePermission(authenticatedUser, PERMISSIONS.SETTINGS_READ);
+
     let config = await prisma.systemConfig.findFirst();
     if (!config) {
       config = await prisma.systemConfig.create({
@@ -21,7 +24,7 @@ export async function settingsHandler(req, res) {
   }
 
   if (req.method === 'POST' || req.method === 'PUT') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.SETTINGS_WRITE);
 
     const { churchName, street } = req.body || {};
     if (!churchName) {

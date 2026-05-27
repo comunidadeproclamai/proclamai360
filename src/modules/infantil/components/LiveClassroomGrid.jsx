@@ -106,7 +106,7 @@ const EmptyState = styled.div`
   font-weight: 400;
 `;
 
-export function LiveClassroomGrid({ children, isLoading, onCheckout }) {
+export function LiveClassroomGrid({ children, isLoading, onCheckout, canManage = false }) {
   if (isLoading) return <EmptyState>Carregando salas...</EmptyState>;
   if (!children || children.length === 0) return <EmptyState>Nenhuma criança em sala no momento.</EmptyState>;
 
@@ -133,9 +133,11 @@ export function LiveClassroomGrid({ children, isLoading, onCheckout }) {
 
           <Actions>
             <Subtitle style={{ marginRight: 'auto' }}><Clock size={14}/> Entrou às {formatTime(child.checkinTime)}</Subtitle>
-            <CheckoutButton onClick={() => onCheckout(child.id)}>
-              <LogOut size={16} /> Check-out
-            </CheckoutButton>
+            {canManage && (
+              <CheckoutButton onClick={() => onCheckout(child.id)}>
+                <LogOut size={16} /> Check-out
+              </CheckoutButton>
+            )}
           </Actions>
         </Card>
       ))}

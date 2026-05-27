@@ -5,12 +5,18 @@ import { StatCard } from '../../../components/common/StatCard.jsx';
 import { useMembers } from '../../members/hooks/useMembers.js';
 import { useFinanceiro } from '../../financeiro/hooks/useFinanceiro.js';
 import { useInfantilLive } from '../../infantil/hooks/useInfantilLive.js';
+import { useAuth } from '../../auth/hooks/useAuth.js';
+import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
 import { formatCurrency } from '../../../utils/currency.js';
 
 export function DashboardPage() {
-  const { members, isLoading: loadingMembers } = useMembers();
-  const { summary, transactions, isLoading: loadingFinance } = useFinanceiro();
-  const { activeChildren } = useInfantilLive();
+  const { user } = useAuth();
+  const canViewMembers = hasPermission(user, PERMISSIONS.MEMBERS_READ);
+  const canViewFinance = hasPermission(user, PERMISSIONS.FINANCIAL_READ);
+  const canViewChildren = hasPermission(user, PERMISSIONS.CHILDREN_READ);
+  const { members, isLoading: loadingMembers } = useMembers({ enabled: canViewMembers });
+  const { summary, transactions, isLoading: loadingFinance } = useFinanceiro({ enabled: canViewFinance });
+  const { activeChildren } = useInfantilLive({ enabled: canViewChildren });
 
   // Get last 3 registered members
   const recentMembers = members.slice(0, 3);
@@ -33,23 +39,23 @@ export function DashboardPage() {
       <StatsGrid>
         <StatCard 
           label="Membros Ativos" 
-          value={loadingMembers ? '...' : members.length.toString()} 
-          detail="Total de cadastros ativos e visitantes" 
+          value={!canViewMembers ? '--' : loadingMembers ? '...' : members.length.toString()} 
+          detail={canViewMembers ? 'Total de cadastros ativos e visitantes' : 'Sem acesso ao modulo de membros'} 
           tone="wine" 
         />
         <StatCard 
           label="Crianças em Sala" 
-          value={activeChildren.length.toString()} 
+          value={canViewChildren ? activeChildren.length.toString() : '--'} 
           detail="Check-ins ativos no Ministério Infantil" 
         />
         <StatCard 
           label="Saldo em Caixa" 
-          value={loadingFinance ? '...' : formatCurrency(summary.balance)} 
-          detail="Soma de saldos em contas integradas" 
+          value={!canViewFinance ? '--' : loadingFinance ? '...' : formatCurrency(summary.balance)} 
+          detail={canViewFinance ? 'Soma de saldos em contas integradas' : 'Sem acesso ao modulo financeiro'} 
         />
         <StatCard 
           label="Lançamentos do Mês" 
-          value={loadingFinance ? '...' : transactions.length.toString()} 
+          value={!canViewFinance ? '--' : loadingFinance ? '...' : transactions.length.toString()} 
           detail="Entradas e saídas registradas" 
         />
       </StatsGrid>

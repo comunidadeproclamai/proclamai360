@@ -128,7 +128,7 @@ const EmptyState = styled.div`
   font-weight: 400;
 `;
 
-export function MembersTable({ members, isLoading, onDelete }) {
+export function MembersTable({ members, isLoading, onDelete, canManage = false }) {
   if (isLoading) {
     return <TableContainer><EmptyState>Carregando membros...</EmptyState></TableContainer>;
   }
@@ -169,10 +169,12 @@ export function MembersTable({ members, isLoading, onDelete }) {
                 </Badge>
               </Td>
               <Td>
-                <FlexRow>
-                  <ActionButton title="Editar"><Edit2 size={16} /></ActionButton>
-                  <ActionButton title="Excluir" onClick={() => onDelete(member.id)}><Trash2 size={16} /></ActionButton>
-                </FlexRow>
+                {canManage && (
+                  <FlexRow>
+                    <ActionButton title="Editar"><Edit2 size={16} /></ActionButton>
+                    <ActionButton title="Excluir" onClick={() => onDelete(member.id)}><Trash2 size={16} /></ActionButton>
+                  </FlexRow>
+                )}
               </Td>
             </tr>
           ))}

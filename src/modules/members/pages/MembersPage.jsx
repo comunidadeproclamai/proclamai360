@@ -4,6 +4,8 @@ import { useMembers } from '../hooks/useMembers.js';
 import { MembersTable } from '../components/MembersTable.jsx';
 import { MemberFormModal } from '../components/MemberFormModal.jsx';
 import { Plus, Search } from 'lucide-react';
+import { useAuth } from '../../auth/hooks/useAuth.js';
+import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
 
 const PageContainer = styled.div`
   display: flex;
@@ -152,6 +154,8 @@ const Select = styled.select`
 `;
 
 export function MembersPage() {
+  const { user } = useAuth();
+  const canManageMembers = hasPermission(user, PERMISSIONS.MEMBERS_WRITE);
   const { members, isLoading, search, setSearch, statusFilter, setStatusFilter, addMember, deleteMember } = useMembers();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -162,10 +166,12 @@ export function MembersPage() {
           <Title>Membros</Title>
           <Subtitle>Gerencie os cadastros e dados pessoais da congregação.</Subtitle>
         </TitleBlock>
-        <PrimaryButton onClick={() => setIsModalOpen(true)}>
-          <Plus size={20} />
-          Novo Membro
-        </PrimaryButton>
+        {canManageMembers && (
+          <PrimaryButton onClick={() => setIsModalOpen(true)}>
+            <Plus size={20} />
+            Novo Membro
+          </PrimaryButton>
+        )}
       </Header>
 
       <FiltersBar>
@@ -185,9 +191,14 @@ export function MembersPage() {
         </Select>
       </FiltersBar>
 
-      <MembersTable members={members} isLoading={isLoading} onDelete={deleteMember} />
+      <MembersTable
+        members={members}
+        isLoading={isLoading}
+        onDelete={deleteMember}
+        canManage={canManageMembers}
+      />
 
-      {isModalOpen && (
+      {isModalOpen && canManageMembers && (
         <MemberFormModal 
           onClose={() => setIsModalOpen(false)} 
           onSave={addMember} 

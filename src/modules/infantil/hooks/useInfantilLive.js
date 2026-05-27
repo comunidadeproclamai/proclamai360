@@ -34,11 +34,17 @@ function mapLiveCheckin(item) {
   };
 }
 
-export function useInfantilLive() {
+export function useInfantilLive({ enabled = true } = {}) {
   const [activeChildren, setActiveChildren] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
 
   const fetchLive = async () => {
+    if (!enabled) {
+      setActiveChildren([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const { data } = await apiClient.get('/infantil/live');
@@ -56,6 +62,8 @@ export function useInfantilLive() {
   }, []);
 
   const addCheckin = async (name, age, allergies) => {
+    if (!enabled) return null;
+
     try {
       const { data } = await apiClient.post('/infantil/checkin', {
         name,
@@ -71,6 +79,8 @@ export function useInfantilLive() {
   };
 
   const doCheckout = async (id) => {
+    if (!enabled) return;
+
     try {
       await apiClient.delete(`/infantil/checkin?id=${id}`);
       await fetchLive();

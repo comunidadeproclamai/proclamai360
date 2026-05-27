@@ -1,13 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../services/apiClient.js';
 
-export function useFinanceiro() {
+export function useFinanceiro({ enabled = true } = {}) {
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary] = useState({ balance: 0, totalInflow: 0, totalOutflow: 0 });
   const [supportData, setSupportData] = useState({ accounts: [], categories: [] });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
 
   const fetchDashboard = useCallback(async () => {
+    if (!enabled) {
+      setTransactions([]);
+      setSummary({ balance: 0, totalInflow: 0, totalOutflow: 0 });
+      setSupportData({ accounts: [], categories: [] });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const [summaryRes, txRes, supportRes] = await Promise.all([
@@ -24,13 +32,15 @@ export function useFinanceiro() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
 
   const addTransaction = async (txData) => {
+    if (!enabled) return false;
+
     try {
       await apiClient.post('/financial/transactions', txData);
       await fetchDashboard();
@@ -42,6 +52,8 @@ export function useFinanceiro() {
   };
 
   const deleteTransaction = async (id) => {
+    if (!enabled) return;
+
     if (!window.confirm('Tem certeza que deseja excluir esta transacao? O saldo da conta sera recalculado.')) {
       return;
     }

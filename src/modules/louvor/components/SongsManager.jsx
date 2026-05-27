@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useSongs } from '../hooks/useSongs.js';
 import { Search, Plus, Trash2, Music, ExternalLink, FileText, X } from 'lucide-react';
 
-export function SongsManager() {
+export function SongsManager({ canManage = false }) {
   const { songs, isLoading, fetchSongs, addSong, deleteSong } = useSongs();
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,9 +54,11 @@ export function SongsManager() {
             onChange={handleSearchChange}
           />
         </SearchWrapper>
+        {canManage && (
         <AddButton onClick={() => setIsModalOpen(true)}>
           <Plus size={18} /> Nova Música
         </AddButton>
+        )}
       </ActionBar>
 
       {isLoading ? (
@@ -109,6 +111,7 @@ export function SongsManager() {
                   )}
                 </LinksGroup>
                 
+                {canManage && (
                 <DeleteButton onClick={() => {
                   if (window.confirm(`Excluir a música "${song.title}"?`)) {
                     deleteSong(song.id);
@@ -116,13 +119,14 @@ export function SongsManager() {
                 }} title="Excluir música">
                   <Trash2 size={16} />
                 </DeleteButton>
+                )}
               </CardActions>
             </SongCard>
           ))}
         </SongsGrid>
       )}
 
-      {isModalOpen && (
+      {isModalOpen && canManage && (
         <Overlay onClick={() => setIsModalOpen(false)}>
           <ModalContent onClick={e => e.stopPropagation()}>
             <ModalHeader>

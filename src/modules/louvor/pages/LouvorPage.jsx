@@ -6,8 +6,12 @@ import { WorshipScalesList } from '../components/WorshipScalesList.jsx';
 import { ScaleFormModal } from '../components/ScaleFormModal.jsx';
 import { SongsManager } from '../components/SongsManager.jsx';
 import { useWorshipScales } from '../hooks/useWorshipScales.js';
+import { useAuth } from '../../auth/hooks/useAuth.js';
+import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
 
 export function LouvorPage() {
+  const { user } = useAuth();
+  const canManageWorship = hasPermission(user, PERMISSIONS.WORSHIP_WRITE);
   const { scales, isLoading, addScale, deleteScale, confirmAttendance } = useWorshipScales();
   const [activeTab, setActiveTab] = useState('scales');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,7 +52,7 @@ export function LouvorPage() {
           </TabButton>
         </TabsGroup>
 
-        {activeTab === 'scales' && (
+        {activeTab === 'scales' && canManageWorship && (
           <CreateBtn onClick={() => setIsModalOpen(true)}>
             <Plus size={18} /> Agendar Escala
           </CreateBtn>
@@ -62,13 +66,14 @@ export function LouvorPage() {
             isLoading={isLoading} 
             onConfirmAttendance={confirmAttendance} 
             onDelete={deleteScale}
+            canManage={canManageWorship}
           />
         ) : (
-          <SongsManager />
+          <SongsManager canManage={canManageWorship} />
         )}
       </ContentArea>
 
-      {isModalOpen && (
+      {isModalOpen && canManageWorship && (
         <ScaleFormModal 
           onClose={() => setIsModalOpen(false)} 
           onSave={handleSaveScale}
@@ -188,4 +193,3 @@ const CreateBtn = styled.button`
 const ContentArea = styled.div`
   min-height: 400px;
 `;
-

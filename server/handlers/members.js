@@ -1,6 +1,7 @@
 import { auditAction } from '../lib/audit.js';
-import { getAuthenticatedUser, requireRole } from '../lib/auth.js';
+import { getAuthenticatedUser, requirePermission } from '../lib/auth.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
+import { PERMISSIONS } from '../lib/permissions.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
 
 export async function membersHandler(req, res) {
@@ -8,6 +9,8 @@ export async function membersHandler(req, res) {
   const authenticatedUser = await getAuthenticatedUser(req);
 
   if (req.method === 'GET') {
+    requirePermission(authenticatedUser, PERMISSIONS.MEMBERS_READ);
+
     const { page = 1, limit = 10, search, status } = req.query;
     const whereClause = {
       AND: [
@@ -44,7 +47,7 @@ export async function membersHandler(req, res) {
   }
 
   if (req.method === 'POST') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.MEMBERS_WRITE);
 
     const body = req.body || {};
     if (!body.name) {
@@ -78,7 +81,7 @@ export async function memberByIdHandler(req, res) {
   const { id } = req.query;
 
   if (req.method === 'PUT') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.MEMBERS_WRITE);
 
     const member = await prisma.member.update({ where: { id }, data: req.body });
     await auditAction(authenticatedUser, 'member.update', {
@@ -89,7 +92,7 @@ export async function memberByIdHandler(req, res) {
   }
 
   if (req.method === 'DELETE') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.MEMBERS_WRITE);
 
     const member = await prisma.member.update({
       where: { id },

@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { Calendar, Music, Users, Check, X, RotateCcw, Trash2, HelpCircle } from 'lucide-react';
 
-export function WorshipScalesList({ scales, isLoading, onConfirmAttendance, onDelete }) {
+export function WorshipScalesList({ scales, isLoading, onConfirmAttendance, onDelete, canManage = false }) {
   
   const formatDate = (dateString) => {
     const d = new Date(dateString);
@@ -35,6 +35,7 @@ export function WorshipScalesList({ scales, isLoading, onConfirmAttendance, onDe
               <Calendar size={16} />
               <span>{formatDate(scale.date)}</span>
             </DateBadge>
+            {canManage && (
             <DeleteBtn onClick={() => {
               if (window.confirm(`Tem certeza que deseja excluir a escala "${scale.eventName}"?`)) {
                 onDelete(scale.id);
@@ -42,6 +43,7 @@ export function WorshipScalesList({ scales, isLoading, onConfirmAttendance, onDe
             }} title="Excluir Escala">
               <Trash2 size={16} />
             </DeleteBtn>
+            )}
           </CardHeader>
 
           <EventName>{scale.eventName}</EventName>

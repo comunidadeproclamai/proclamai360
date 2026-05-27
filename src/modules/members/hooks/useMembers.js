@@ -1,13 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../services/apiClient.js';
 
-export function useMembers() {
+export function useMembers({ enabled = true } = {}) {
   const [members, setMembers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 
   const fetchMembers = useCallback(async () => {
+    if (!enabled) {
+      setMembers([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -24,7 +30,7 @@ export function useMembers() {
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter]);
+  }, [enabled, search, statusFilter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -34,6 +40,8 @@ export function useMembers() {
   }, [fetchMembers]);
 
   const addMember = async (memberData) => {
+    if (!enabled) return;
+
     try {
       await apiClient.post('/members', memberData);
       fetchMembers();
@@ -44,6 +52,8 @@ export function useMembers() {
   };
 
   const deleteMember = async (id) => {
+    if (!enabled) return;
+
     try {
       await apiClient.delete(`/members/${id}`);
       fetchMembers();

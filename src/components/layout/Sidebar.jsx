@@ -3,12 +3,15 @@ import { NavLink } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { navigationItems } from '../../constants/navigation.js';
 import { useThemeMode } from '../../contexts/ThemeModeContext.jsx';
+import { hasPermission } from '../../lib/permissions.js';
+import { useAuth } from '../../modules/auth/hooks/useAuth.js';
 
 export function Sidebar({ isOpen, onClose }) {
   const { themeMode } = useThemeMode();
+  const { user } = useAuth();
 
-  // Load correct logo depending on theme
   const logoSrc = themeMode === 'dark' ? '/logo-dark.png' : '/logo-light.png';
+  const visibleItems = navigationItems.filter((item) => hasPermission(user, item.permission));
 
   return (
     <>
@@ -24,7 +27,7 @@ export function Sidebar({ isOpen, onClose }) {
         </Brand>
 
         <Nav aria-label="Navegação principal">
-          {navigationItems.map((item) => {
+          {visibleItems.map((item) => {
             const Icon = item.icon;
 
             return (

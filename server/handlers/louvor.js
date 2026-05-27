@@ -1,13 +1,20 @@
 import { auditAction } from '../lib/audit.js';
-import { ensureAuthenticatedInProduction, requireRole } from '../lib/auth.js';
+import { ensureAuthenticatedInProduction, requirePermission } from '../lib/auth.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
+import { PERMISSIONS, hasPermission } from '../lib/permissions.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
+
+function hasWorshipWritePermission(user) {
+  return hasPermission(user, PERMISSIONS.WORSHIP_WRITE);
+}
 
 async function handleSongs(req, res) {
   requireDatabase();
   const authenticatedUser = await ensureAuthenticatedInProduction(req);
 
   if (req.method === 'GET') {
+    requirePermission(authenticatedUser, PERMISSIONS.WORSHIP_READ);
+
     const { search } = req.query;
     const where = search
       ? {
@@ -22,7 +29,7 @@ async function handleSongs(req, res) {
   }
 
   if (req.method === 'POST') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.WORSHIP_WRITE);
 
     const { title, artist, defaultKey, bpm, chordsUrl, videoUrl, lyrics } = req.body || {};
     if (!title || !artist || !defaultKey) {
@@ -50,7 +57,7 @@ async function handleSongs(req, res) {
   }
 
   if (req.method === 'PUT') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.WORSHIP_WRITE);
 
     const { id, ...updateData } = req.body || {};
     const songId = id || req.query.id;
@@ -65,7 +72,7 @@ async function handleSongs(req, res) {
   }
 
   if (req.method === 'DELETE') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.WORSHIP_WRITE);
 
     const id = req.query.id || req.body?.id;
     if (!id) throw createHttpError(400, 'validation_error', 'ID da musica e obrigatorio.');
@@ -82,6 +89,8 @@ async function handleScales(req, res) {
   const authenticatedUser = await ensureAuthenticatedInProduction(req);
 
   if (req.method === 'GET') {
+    requirePermission(authenticatedUser, PERMISSIONS.WORSHIP_READ);
+
     const scales = await prisma.worshipScale.findMany({
       include: {
         lineup: {
@@ -98,7 +107,7 @@ async function handleScales(req, res) {
   }
 
   if (req.method === 'POST') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.WORSHIP_WRITE);
 
     const { date, eventName, notes, lineup, setlist } = req.body || {};
     if (!date || !eventName) {
@@ -154,7 +163,7 @@ async function handleScales(req, res) {
       throw createHttpError(400, 'invalid_status', 'Status invalido.');
     }
 
-    let isAuthorized = authenticatedUser?.role === 'admin';
+    let isAuthorized = hasWorshipWritePermission(authenticatedUser);
     if (!isAuthorized) {
       const member = await prisma.member.findFirst({
         where: { id: memberId, userId: authenticatedUser.id },
@@ -182,7 +191,7 @@ async function handleScales(req, res) {
   }
 
   if (req.method === 'DELETE') {
-    requireRole(authenticatedUser, 'admin');
+    requirePermission(authenticatedUser, PERMISSIONS.WORSHIP_WRITE);
 
     const id = req.query.id || req.body?.id;
     if (!id) throw createHttpError(400, 'validation_error', 'ID da escala e obrigatorio.');

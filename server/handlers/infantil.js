@@ -1,6 +1,7 @@
 import { getAuthenticatedUser } from '../lib/auth.js';
 import { auditAction } from '../lib/audit.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
+import { PERMISSIONS, requirePermission } from '../lib/permissions.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
 
 function generateSecurityCode() {
@@ -14,7 +15,8 @@ async function resolveOperator(req) {
 async function handleLive(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
   requireDatabase();
-  await getAuthenticatedUser(req);
+  const authenticatedUser = await getAuthenticatedUser(req);
+  requirePermission(authenticatedUser, PERMISSIONS.CHILDREN_READ);
 
   res.setHeader('Cache-Control', 'public, s-maxage=5, stale-while-revalidate=59');
 
@@ -39,12 +41,12 @@ async function handleLive(req, res) {
 async function handleCheckin(req, res) {
   requireDatabase();
   const authenticatedUser = await resolveOperator(req);
+  requirePermission(authenticatedUser, PERMISSIONS.CHILDREN_WRITE);
 
   if (req.method === 'POST') {
-    const { childId, guardianId, checkedInById, name, age, allergies } = req.body || {};
+    const { childId, guardianId, name, age, allergies } = req.body || {};
     let finalChildId = childId;
     let finalGuardianId = guardianId;
-    let finalCheckedInById = checkedInById || authenticatedUser.id;
 
     if (!finalChildId || !finalGuardianId) {
       if (!name || !age) {
@@ -98,7 +100,7 @@ async function handleCheckin(req, res) {
         securityCode: code,
         childId: finalChildId,
         guardianId: finalGuardianId,
-        checkedInById: finalCheckedInById,
+        checkedInById: authenticatedUser.id,
       },
     });
 

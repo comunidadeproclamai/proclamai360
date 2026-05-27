@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Settings, Sun, Moon, Palette, Home, CheckCircle2 } from 'lucide-react';
+import { Settings, Sun, Moon, Palette, Home, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Button } from '../../../components/common/Button.jsx';
 import { useThemeMode } from '../../../contexts/ThemeModeContext.jsx';
@@ -12,6 +12,9 @@ export function ConfiguracoesPage() {
   const [address, setAddress] = useState('');
   const [saveStatus, setSaveStatus] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
 
   useEffect(() => {
     async function loadSettings() {
@@ -30,6 +33,22 @@ export function ConfiguracoesPage() {
     loadSettings();
   }, []);
 
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const { data } = await apiClient.get('/users/list');
+        setUsers(data.data || []);
+        setRoles(data.roles || []);
+      } catch (err) {
+        console.error('Erro ao buscar usuarios:', err);
+      } finally {
+        setUsersLoading(false);
+      }
+    }
+
+    loadUsers();
+  }, []);
+
   const handleSave = async (e) => {
     e.preventDefault();
     try {
@@ -45,6 +64,20 @@ export function ConfiguracoesPage() {
       console.error('Erro ao salvar preferências:', err);
       alert('Erro ao salvar as configurações: ' + (err.response?.data?.error || err.message));
       setSaveStatus(false);
+    }
+  };
+
+  const handleRoleChange = async (userId, role) => {
+    const previousUsers = users;
+    setUsers((currentUsers) =>
+      currentUsers.map((user) => (user.id === userId ? { ...user, role } : user)),
+    );
+
+    try {
+      await apiClient.patch('/users/role', { userId, role });
+    } catch (err) {
+      setUsers(previousUsers);
+      alert('Erro ao atualizar perfil: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -150,6 +183,43 @@ export function ConfiguracoesPage() {
               </Button>
             </ButtonWrapper>
           </Form>
+        </SettingsCard>
+
+        <SettingsCard>
+          <CardHeader>
+            <ShieldCheck size={20} />
+            <h3>Usuarios & Permissoes</h3>
+          </CardHeader>
+          <CardDescription>
+            Defina o perfil operacional de cada pessoa com acesso a plataforma.
+          </CardDescription>
+
+          {usersLoading ? (
+            <UsersEmpty>Carregando usuarios...</UsersEmpty>
+          ) : users.length === 0 ? (
+            <UsersEmpty>Nenhum usuario cadastrado.</UsersEmpty>
+          ) : (
+            <UsersList>
+              {users.map((user) => (
+                <UserRow key={user.id}>
+                  <UserInfo>
+                    <strong>{user.name}</strong>
+                    <span>{user.email}</span>
+                  </UserInfo>
+                  <RoleSelect
+                    value={user.role}
+                    onChange={(event) => handleRoleChange(user.id, event.target.value)}
+                  >
+                    {roles.map((role) => (
+                      <option key={role.value} value={role.value}>
+                        {role.label}
+                      </option>
+                    ))}
+                  </RoleSelect>
+                </UserRow>
+              ))}
+            </UsersList>
+          )}
         </SettingsCard>
       </SettingsGrid>
     </PageContainer>
@@ -332,4 +402,64 @@ const ButtonWrapper = styled.div`
   display: flex;
   justify-content: flex-end;
   margin-top: 0.5rem;
+`;
+
+const UsersList = styled.div`
+  display: grid;
+  gap: 0.75rem;
+`;
+
+const UserRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 11rem;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.85rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const UserInfo = styled.div`
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+
+  strong {
+    color: ${({ theme }) => theme.colors.ice};
+    font-size: 0.92rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    color: ${({ theme }) => theme.colors.muted};
+    font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`;
+
+const RoleSelect = styled.select`
+  min-height: 2.45rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.sm};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.ice};
+  padding: 0 0.75rem;
+  outline: none;
+`;
+
+const UsersEmpty = styled.div`
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  color: ${({ theme }) => theme.colors.muted};
 `;

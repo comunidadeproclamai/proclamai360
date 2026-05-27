@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import { useInfantilLive } from '../hooks/useInfantilLive.js';
 import { LiveClassroomGrid } from '../components/LiveClassroomGrid.jsx';
 import { QrCode, UserPlus, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../auth/hooks/useAuth.js';
+import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
 
 const PageContainer = styled.div`
   display: flex;
@@ -156,6 +158,8 @@ const BigCode = styled.div`
 `;
 
 export function InfantilPage() {
+  const { user } = useAuth();
+  const canManageChildren = hasPermission(user, PERMISSIONS.CHILDREN_WRITE);
   const { activeChildren, isLoading, addCheckin, doCheckout } = useInfantilLive();
   const [formData, setFormData] = useState({ name: '', age: '', allergies: '' });
   const [generatedCode, setGeneratedCode] = useState(null);
@@ -185,6 +189,7 @@ export function InfantilPage() {
         </TitleBlock>
       </Header>
 
+      {canManageChildren && (
       <CheckinPanel>
         <PanelTitle><UserPlus size={18} /> Novo Check-in Rápido</PanelTitle>
         <FormGroup>
@@ -219,10 +224,16 @@ export function InfantilPage() {
           <QrCode size={20} /> {isSubmitting ? 'Gerando...' : 'Gerar Ticket'}
         </ActionButton>
       </CheckinPanel>
+      )}
 
       <div style={{ marginTop: '1rem' }}>
         <PanelTitle style={{ marginBottom: '1.5rem' }}><AlertCircle size={18} /> Crianças em Sala (Ao Vivo)</PanelTitle>
-        <LiveClassroomGrid children={activeChildren} isLoading={isLoading} onCheckout={doCheckout} />
+        <LiveClassroomGrid
+          children={activeChildren}
+          isLoading={isLoading}
+          onCheckout={doCheckout}
+          canManage={canManageChildren}
+        />
       </div>
 
       {generatedCode && (
