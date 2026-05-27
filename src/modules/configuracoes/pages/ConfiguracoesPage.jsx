@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Settings, Sun, Moon, Palette, Home, CheckCircle2, ShieldCheck } from 'lucide-react';
+import {
+  CheckCircle2,
+  ClipboardList,
+  Home,
+  KeyRound,
+  Moon,
+  Palette,
+  Settings,
+  ShieldCheck,
+  Sun,
+  UserPlus,
+} from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Button } from '../../../components/common/Button.jsx';
 import { useThemeMode } from '../../../contexts/ThemeModeContext.jsx';
@@ -15,6 +26,41 @@ export function ConfiguracoesPage() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(true);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'member',
+  });
+  const [resetPasswords, setResetPasswords] = useState({});
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  const loadUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const { data } = await apiClient.get('/users/list');
+      setUsers(data.data || []);
+      setRoles(data.roles || []);
+    } catch (err) {
+      console.error('Erro ao buscar usuarios:', err);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const loadAuditLogs = async () => {
+    try {
+      setAuditLoading(true);
+      const { data } = await apiClient.get('/users/audit');
+      setAuditLogs(data.data || []);
+    } catch (err) {
+      console.error('Erro ao buscar auditoria:', err);
+    } finally {
+      setAuditLoading(false);
+    }
+  };
 
   useEffect(() => {
     async function loadSettings() {
@@ -34,19 +80,8 @@ export function ConfiguracoesPage() {
   }, []);
 
   useEffect(() => {
-    async function loadUsers() {
-      try {
-        const { data } = await apiClient.get('/users/list');
-        setUsers(data.data || []);
-        setRoles(data.roles || []);
-      } catch (err) {
-        console.error('Erro ao buscar usuarios:', err);
-      } finally {
-        setUsersLoading(false);
-      }
-    }
-
     loadUsers();
+    loadAuditLogs();
   }, []);
 
   const handleSave = async (e) => {
@@ -75,10 +110,47 @@ export function ConfiguracoesPage() {
 
     try {
       await apiClient.patch('/users/role', { userId, role });
+      await loadAuditLogs();
     } catch (err) {
       setUsers(previousUsers);
       alert('Erro ao atualizar perfil: ' + (err.response?.data?.message || err.message));
     }
+  };
+
+  const handleCreateUser = async (event) => {
+    event.preventDefault();
+    try {
+      setIsCreatingUser(true);
+      await apiClient.post('/users/create', newUser);
+      setNewUser({ name: '', email: '', password: '', role: 'member' });
+      await Promise.all([loadUsers(), loadAuditLogs()]);
+    } catch (err) {
+      alert('Erro ao criar usuario: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsCreatingUser(false);
+    }
+  };
+
+  const handleResetPassword = async (userId) => {
+    const password = resetPasswords[userId] || '';
+    if (!password) return;
+
+    try {
+      await apiClient.patch('/users/password', { userId, password });
+      setResetPasswords((current) => ({ ...current, [userId]: '' }));
+      await loadAuditLogs();
+    } catch (err) {
+      alert('Erro ao redefinir senha: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const formatDateTime = (value) => {
+    return new Date(value).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -194,6 +266,55 @@ export function ConfiguracoesPage() {
             Defina o perfil operacional de cada pessoa com acesso a plataforma.
           </CardDescription>
 
+          <CreateUserForm onSubmit={handleCreateUser}>
+            <FormGroup>
+              <Label>Nome</Label>
+              <Input
+                value={newUser.name}
+                onChange={(event) => setNewUser({ ...newUser, name: event.target.value })}
+                placeholder="Nome do usuario"
+                required
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label>E-mail</Label>
+              <Input
+                type="email"
+                value={newUser.email}
+                onChange={(event) => setNewUser({ ...newUser, email: event.target.value })}
+                placeholder="email@dominio.com"
+                required
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label>Senha inicial</Label>
+              <Input
+                type="password"
+                value={newUser.password}
+                onChange={(event) => setNewUser({ ...newUser, password: event.target.value })}
+                placeholder="Minimo 8 caracteres"
+                required
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label>Perfil</Label>
+              <RoleSelect
+                value={newUser.role}
+                onChange={(event) => setNewUser({ ...newUser, role: event.target.value })}
+              >
+                {roles.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
+              </RoleSelect>
+            </FormGroup>
+            <CreateUserButton type="submit" disabled={isCreatingUser}>
+              <UserPlus size={16} />
+              {isCreatingUser ? 'Criando...' : 'Criar usuario'}
+            </CreateUserButton>
+          </CreateUserForm>
+
           {usersLoading ? (
             <UsersEmpty>Carregando usuarios...</UsersEmpty>
           ) : users.length === 0 ? (
@@ -216,9 +337,61 @@ export function ConfiguracoesPage() {
                       </option>
                     ))}
                   </RoleSelect>
+                  <ResetPasswordGroup>
+                    <PasswordInput
+                      type="password"
+                      value={resetPasswords[user.id] || ''}
+                      onChange={(event) =>
+                        setResetPasswords((current) => ({
+                          ...current,
+                          [user.id]: event.target.value,
+                        }))
+                      }
+                      placeholder="Nova senha"
+                    />
+                    <IconActionButton
+                      type="button"
+                      title="Redefinir senha"
+                      disabled={!resetPasswords[user.id]}
+                      onClick={() => handleResetPassword(user.id)}
+                    >
+                      <KeyRound size={15} />
+                    </IconActionButton>
+                  </ResetPasswordGroup>
                 </UserRow>
               ))}
             </UsersList>
+          )}
+        </SettingsCard>
+
+        <SettingsCard>
+          <CardHeader>
+            <ClipboardList size={20} />
+            <h3>Auditoria Recente</h3>
+          </CardHeader>
+          <CardDescription>
+            Acompanhe as ultimas acoes sensiveis realizadas na plataforma.
+          </CardDescription>
+
+          {auditLoading ? (
+            <UsersEmpty>Carregando auditoria...</UsersEmpty>
+          ) : auditLogs.length === 0 ? (
+            <UsersEmpty>Nenhum evento registrado.</UsersEmpty>
+          ) : (
+            <AuditList>
+              {auditLogs.map((log) => (
+                <AuditRow key={log.id}>
+                  <AuditHeader>
+                    <strong>{log.action}</strong>
+                    <span>{formatDateTime(log.timestamp)}</span>
+                  </AuditHeader>
+                  <AuditMeta>
+                    {log.user?.name || 'Usuario'} - {log.user?.email || 'sem e-mail'}
+                  </AuditMeta>
+                  <AuditDetails>{JSON.stringify(log.details)}</AuditDetails>
+                </AuditRow>
+              ))}
+            </AuditList>
           )}
         </SettingsCard>
       </SettingsGrid>
@@ -409,9 +582,42 @@ const UsersList = styled.div`
   gap: 0.75rem;
 `;
 
+const CreateUserForm = styled.form`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const CreateUserButton = styled.button`
+  min-height: 2.85rem;
+  align-self: end;
+  border: 1px solid rgba(197, 165, 92, 0.2);
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.wine};
+  color: white;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+`;
+
 const UserRow = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 11rem;
+  grid-template-columns: minmax(0, 1fr) 11rem 14rem;
   gap: 1rem;
   align-items: center;
   padding: 0.85rem;
@@ -456,10 +662,91 @@ const RoleSelect = styled.select`
   outline: none;
 `;
 
+const ResetPasswordGroup = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.45rem;
+  gap: 0.5rem;
+`;
+
+const PasswordInput = styled.input`
+  min-height: 2.45rem;
+  min-width: 0;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.sm};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.ice};
+  padding: 0 0.75rem;
+  outline: none;
+`;
+
+const IconActionButton = styled.button`
+  min-height: 2.45rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.sm};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.gold};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+`;
+
 const UsersEmpty = styled.div`
   padding: 1.5rem;
   text-align: center;
   border: 1px dashed ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.md};
   color: ${({ theme }) => theme.colors.muted};
+`;
+
+const AuditList = styled.div`
+  display: grid;
+  gap: 0.75rem;
+  max-height: 28rem;
+  overflow: auto;
+  padding-right: 0.25rem;
+`;
+
+const AuditRow = styled.div`
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+`;
+
+const AuditHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+
+  strong {
+    color: ${({ theme }) => theme.colors.ice};
+    font-size: 0.9rem;
+  }
+
+  span {
+    color: ${({ theme }) => theme.colors.muted};
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+`;
+
+const AuditMeta = styled.span`
+  color: ${({ theme }) => theme.colors.muted};
+  font-size: 0.78rem;
+`;
+
+const AuditDetails = styled.code`
+  color: ${({ theme }) => theme.colors.mutedDark};
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
