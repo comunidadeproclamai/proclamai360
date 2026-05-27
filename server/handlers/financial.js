@@ -1,4 +1,5 @@
-import { getAuthenticatedUser } from '../lib/auth.js';
+import { auditAction } from '../lib/audit.js';
+import { getAuthenticatedUser, requireRole } from '../lib/auth.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
 
@@ -51,7 +52,7 @@ async function handleSupportData(req, res) {
 
 async function handleTransactions(req, res) {
   requireDatabase();
-  await getAuthenticatedUser(req);
+  const authenticatedUser = await getAuthenticatedUser(req);
 
   if (req.method === 'GET') {
     const transactions = await prisma.financialTransaction.findMany({
@@ -77,22 +78,34 @@ async function handleTransactions(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { description, amount, type, categoryId, accountId, createdById } = req.body || {};
-    if (!description || !amount || !accountId || !categoryId || !createdById) {
+    requireRole(authenticatedUser, 'admin');
+
+    const { description, amount, type, categoryId, accountId } = req.body || {};
+    if (!description || !amount || !accountId || !categoryId) {
       throw createHttpError(400, 'validation_error', 'Campos obrigatorios faltando.');
     }
 
-    const amountModifier = type === 'OUTFLOW' ? { decrement: amount } : { increment: amount };
+    if (!['INFLOW', 'OUTFLOW'].includes(type)) {
+      throw createHttpError(400, 'invalid_transaction_type', 'Tipo de transacao invalido.');
+    }
+
+    const normalizedAmount = Number(amount);
+    if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+      throw createHttpError(400, 'invalid_amount', 'Informe um valor maior que zero.');
+    }
+
+    const amountModifier =
+      type === 'OUTFLOW' ? { decrement: normalizedAmount } : { increment: normalizedAmount };
     const [transaction, updatedAccount] = await prisma.$transaction([
       prisma.financialTransaction.create({
         data: {
           description,
-          amount,
+          amount: normalizedAmount,
           type,
           date: new Date(),
           categoryId,
           accountId,
-          createdById,
+          createdById: authenticatedUser.id,
         },
       }),
       prisma.financialAccount.update({
@@ -100,6 +113,13 @@ async function handleTransactions(req, res) {
         data: { balance: amountModifier },
       }),
     ]);
+
+    await auditAction(authenticatedUser, 'financial.transaction.create', {
+      transactionId: transaction.id,
+      accountId,
+      amount: normalizedAmount,
+      type,
+    });
 
     return sendJson(res, 201, { transaction, accountBalance: updatedAccount.balance });
   }
@@ -110,7 +130,8 @@ async function handleTransactions(req, res) {
 export async function financialTransactionByIdHandler(req, res) {
   if (req.method !== 'DELETE') return methodNotAllowed(res, ['DELETE']);
   requireDatabase();
-  await getAuthenticatedUser(req);
+  const authenticatedUser = await getAuthenticatedUser(req);
+  requireRole(authenticatedUser, 'admin');
 
   const { id } = req.query;
   const transaction = await prisma.financialTransaction.findUnique({ where: { id } });
@@ -130,6 +151,13 @@ export async function financialTransactionByIdHandler(req, res) {
       data: { balance: amountModifier },
     }),
   ]);
+
+  await auditAction(authenticatedUser, 'financial.transaction.delete', {
+    transactionId: transaction.id,
+    accountId: transaction.accountId,
+    amount: Number(transaction.amount),
+    type: transaction.type,
+  });
 
   return sendJson(res, 200, { success: true });
 }

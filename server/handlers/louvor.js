@@ -1,10 +1,11 @@
-import { ensureAuthenticatedInProduction } from '../lib/auth.js';
+import { auditAction } from '../lib/audit.js';
+import { ensureAuthenticatedInProduction, requireRole } from '../lib/auth.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
 
 async function handleSongs(req, res) {
   requireDatabase();
-  await ensureAuthenticatedInProduction(req);
+  const authenticatedUser = await ensureAuthenticatedInProduction(req);
 
   if (req.method === 'GET') {
     const { search } = req.query;
@@ -21,6 +22,8 @@ async function handleSongs(req, res) {
   }
 
   if (req.method === 'POST') {
+    requireRole(authenticatedUser, 'admin');
+
     const { title, artist, defaultKey, bpm, chordsUrl, videoUrl, lyrics } = req.body || {};
     if (!title || !artist || !defaultKey) {
       throw createHttpError(400, 'validation_error', 'Titulo, artista e tom padrao sao obrigatorios.');
@@ -38,21 +41,36 @@ async function handleSongs(req, res) {
       },
     });
 
+    await auditAction(authenticatedUser, 'worship.song.create', {
+      songId: song.id,
+      title: song.title,
+    });
+
     return sendJson(res, 201, song);
   }
 
   if (req.method === 'PUT') {
+    requireRole(authenticatedUser, 'admin');
+
     const { id, ...updateData } = req.body || {};
     const songId = id || req.query.id;
     if (!songId) throw createHttpError(400, 'validation_error', 'ID da musica e obrigatorio.');
     if (updateData.bpm) updateData.bpm = Number(updateData.bpm);
-    return sendJson(res, 200, await prisma.song.update({ where: { id: songId }, data: updateData }));
+    const song = await prisma.song.update({ where: { id: songId }, data: updateData });
+    await auditAction(authenticatedUser, 'worship.song.update', {
+      songId: song.id,
+      title: song.title,
+    });
+    return sendJson(res, 200, song);
   }
 
   if (req.method === 'DELETE') {
+    requireRole(authenticatedUser, 'admin');
+
     const id = req.query.id || req.body?.id;
     if (!id) throw createHttpError(400, 'validation_error', 'ID da musica e obrigatorio.');
     await prisma.song.delete({ where: { id } });
+    await auditAction(authenticatedUser, 'worship.song.delete', { songId: id });
     return sendJson(res, 200, { message: 'Musica excluida com sucesso.' });
   }
 
@@ -80,6 +98,8 @@ async function handleScales(req, res) {
   }
 
   if (req.method === 'POST') {
+    requireRole(authenticatedUser, 'admin');
+
     const { date, eventName, notes, lineup, setlist } = req.body || {};
     if (!date || !eventName) {
       throw createHttpError(400, 'validation_error', 'Data e nome do evento sao obrigatorios.');
@@ -115,6 +135,12 @@ async function handleScales(req, res) {
       },
     });
 
+    await auditAction(authenticatedUser, 'worship.scale.create', {
+      scaleId: scale.id,
+      eventName: scale.eventName,
+      date: scale.date,
+    });
+
     return sendJson(res, 201, scale);
   }
 
@@ -145,13 +171,23 @@ async function handleScales(req, res) {
       data: { status },
     });
 
+    await auditAction(authenticatedUser, 'worship.lineup.status.update', {
+      scaleId,
+      memberId,
+      instrument,
+      status,
+    });
+
     return sendJson(res, 200, lineup);
   }
 
   if (req.method === 'DELETE') {
+    requireRole(authenticatedUser, 'admin');
+
     const id = req.query.id || req.body?.id;
     if (!id) throw createHttpError(400, 'validation_error', 'ID da escala e obrigatorio.');
     await prisma.worshipScale.delete({ where: { id } });
+    await auditAction(authenticatedUser, 'worship.scale.delete', { scaleId: id });
     return sendJson(res, 200, { message: 'Escala excluida com sucesso.' });
   }
 

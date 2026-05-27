@@ -60,6 +60,16 @@ export async function getAuthenticatedUser(req) {
   }
 }
 
+export function requireRole(user, allowedRoles) {
+  const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+
+  if (!user || !roles.includes(user.role)) {
+    throw createHttpError(403, 'forbidden', 'Voce nao tem permissao para executar esta acao.');
+  }
+
+  return user;
+}
+
 export async function ensureAuthenticatedInProduction(req) {
   try {
     return await getAuthenticatedUser(req);

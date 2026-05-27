@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { auditAction } from '../lib/audit.js';
 import { USER_SELECT, signAuthToken } from '../lib/auth.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
@@ -34,6 +35,8 @@ async function handleLogin(req, res) {
     select: USER_SELECT,
   });
 
+  await auditAction(user, 'auth.login', { email: user.email });
+
   return sendJson(res, 200, { user, token: signAuthToken(user) });
 }
 
@@ -66,6 +69,8 @@ async function handleRegister(req, res) {
     },
     select: USER_SELECT,
   });
+
+  await auditAction(user, 'auth.register', { email: user.email });
 
   return sendJson(res, 201, { user, token: signAuthToken(user) });
 }

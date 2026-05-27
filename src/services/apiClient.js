@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { appConfig } from '../config/appConfig.js';
-import { getStoredToken } from '../lib/storage.js';
+import { clearStoredToken, getStoredToken } from '../lib/storage.js';
 
 export const apiClient = axios.create({
   baseURL: appConfig.apiBaseUrl,
@@ -18,3 +18,15 @@ apiClient.interceptors.request.use((config) => {
 
   return config;
 });
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
+      clearStoredToken();
+      window.dispatchEvent(new CustomEvent('proclamai:session-expired'));
+    }
+
+    return Promise.reject(error);
+  },
+);

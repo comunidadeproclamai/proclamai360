@@ -33,6 +33,17 @@ export function AuthProvider({ children }) {
     restoreSession();
   }, []);
 
+  useEffect(() => {
+    function handleSessionExpired() {
+      clearStoredToken();
+      setUser(null);
+      navigate('/login', { replace: true });
+    }
+
+    window.addEventListener('proclamai:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('proclamai:session-expired', handleSessionExpired);
+  }, [navigate]);
+
   const authenticate = useCallback(
     async (credentials) => {
       const response = await authService.login(credentials);

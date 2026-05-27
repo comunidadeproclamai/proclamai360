@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../../services/apiClient.js';
-import { useAuth } from '../../auth/hooks/useAuth.js';
 
 export function useFinanceiro() {
-  const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary] = useState({ balance: 0, totalInflow: 0, totalOutflow: 0 });
   const [supportData, setSupportData] = useState({ accounts: [], categories: [] });
@@ -34,10 +32,7 @@ export function useFinanceiro() {
 
   const addTransaction = async (txData) => {
     try {
-      await apiClient.post('/financial/transactions', {
-        ...txData,
-        createdById: user?.id,
-      });
+      await apiClient.post('/financial/transactions', txData);
       await fetchDashboard();
       return true;
     } catch (error) {

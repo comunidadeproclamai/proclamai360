@@ -1,4 +1,5 @@
 import { getAuthenticatedUser } from '../lib/auth.js';
+import { auditAction } from '../lib/audit.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
 
@@ -101,6 +102,12 @@ async function handleCheckin(req, res) {
       },
     });
 
+    await auditAction(authenticatedUser, 'child.checkin', {
+      checkinId: checkin.id,
+      childId: finalChildId,
+      guardianId: finalGuardianId,
+    });
+
     return sendJson(res, 201, checkin);
   }
 
@@ -116,6 +123,12 @@ async function handleCheckin(req, res) {
         checkoutTime: new Date(),
         checkedOutById: authenticatedUser.id,
       },
+    });
+
+    await auditAction(authenticatedUser, 'child.checkout', {
+      checkinId: checkin.id,
+      childId: checkin.childId,
+      guardianId: checkin.guardianId,
     });
 
     return sendJson(res, 200, checkin);

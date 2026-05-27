@@ -1,10 +1,11 @@
-import { getAuthenticatedUser } from '../lib/auth.js';
+import { auditAction } from '../lib/audit.js';
+import { getAuthenticatedUser, requireRole } from '../lib/auth.js';
 import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
 
 export async function membersHandler(req, res) {
   requireDatabase();
-  await getAuthenticatedUser(req);
+  const authenticatedUser = await getAuthenticatedUser(req);
 
   if (req.method === 'GET') {
     const { page = 1, limit = 10, search, status } = req.query;
@@ -43,6 +44,8 @@ export async function membersHandler(req, res) {
   }
 
   if (req.method === 'POST') {
+    requireRole(authenticatedUser, 'admin');
+
     const body = req.body || {};
     if (!body.name) {
       throw createHttpError(400, 'validation_error', 'O nome e obrigatorio.');
@@ -58,6 +61,11 @@ export async function membersHandler(req, res) {
       },
     });
 
+    await auditAction(authenticatedUser, 'member.create', {
+      memberId: member.id,
+      name: member.name,
+    });
+
     return sendJson(res, 201, member);
   }
 
@@ -66,17 +74,30 @@ export async function membersHandler(req, res) {
 
 export async function memberByIdHandler(req, res) {
   requireDatabase();
-  await getAuthenticatedUser(req);
+  const authenticatedUser = await getAuthenticatedUser(req);
   const { id } = req.query;
 
   if (req.method === 'PUT') {
-    return sendJson(res, 200, await prisma.member.update({ where: { id }, data: req.body }));
+    requireRole(authenticatedUser, 'admin');
+
+    const member = await prisma.member.update({ where: { id }, data: req.body });
+    await auditAction(authenticatedUser, 'member.update', {
+      memberId: member.id,
+      name: member.name,
+    });
+    return sendJson(res, 200, member);
   }
 
   if (req.method === 'DELETE') {
+    requireRole(authenticatedUser, 'admin');
+
     const member = await prisma.member.update({
       where: { id },
       data: { status: 'DISMISSED' },
+    });
+    await auditAction(authenticatedUser, 'member.dismiss', {
+      memberId: member.id,
+      name: member.name,
     });
     return sendJson(res, 200, { message: 'Membro inativado com sucesso.', data: member });
   }
