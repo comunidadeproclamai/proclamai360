@@ -7,6 +7,8 @@ import { CheckinHistoryCard } from '../components/CheckinHistoryCard.jsx';
 import { CheckoutConfirmationModal } from '../components/CheckoutConfirmationModal.jsx';
 import { ChildrenRegistryCard } from '../components/ChildrenRegistryCard.jsx';
 import { GuardianRegistryCard } from '../components/GuardianRegistryCard.jsx';
+import { InfantilNotice } from '../components/InfantilNotice.jsx';
+import { InfantilStatsBar } from '../components/InfantilStatsBar.jsx';
 import {
   ContentGrid,
   Header,
@@ -37,29 +39,37 @@ export function InfantilPage() {
   } = useInfantilAdmin();
   const [generatedCode, setGeneratedCode] = useState(null);
   const [pendingCheckout, setPendingCheckout] = useState(null);
+  const [notice, setNotice] = useState(null);
+
+  const showNotice = (type, message) => {
+    setNotice({ type, message });
+  };
 
   const handleQuickCheckin = async (payload) => {
     try {
       const code = await createQuickCheckin(payload);
       setGeneratedCode(code);
+      showNotice('success', 'Check-in realizado com sucesso.');
     } catch (error) {
-      alert(error.response?.data?.message || 'Nao foi possivel realizar o check-in.');
+      showNotice('error', error.response?.data?.message || 'Nao foi possivel realizar o check-in.');
     }
   };
 
   const handleCreateChild = async (payload) => {
     try {
       await createChild(payload);
+      showNotice('success', 'Crianca cadastrada com sucesso.');
     } catch (error) {
-      alert(error.response?.data?.message || 'Nao foi possivel cadastrar a crianca.');
+      showNotice('error', error.response?.data?.message || 'Nao foi possivel cadastrar a crianca.');
     }
   };
 
   const handleCreateGuardian = async (payload) => {
     try {
       await createGuardian(payload);
+      showNotice('success', 'Responsavel cadastrado com sucesso.');
     } catch (error) {
-      alert(error.response?.data?.message || 'Nao foi possivel cadastrar o responsavel.');
+      showNotice('error', error.response?.data?.message || 'Nao foi possivel cadastrar o responsavel.');
     }
   };
 
@@ -67,8 +77,9 @@ export function InfantilPage() {
     try {
       await checkoutChild(child.id, securityCode);
       setPendingCheckout(null);
+      showNotice('success', 'Check-out realizado com seguranca.');
     } catch (error) {
-      alert(error.response?.data?.message || 'Nao foi possivel realizar o check-out.');
+      showNotice('error', error.response?.data?.message || 'Nao foi possivel realizar o check-out.');
     }
   };
 
@@ -80,6 +91,15 @@ export function InfantilPage() {
           <Subtitle>Gestão, segurança e histórico real das salas.</Subtitle>
         </TitleBlock>
       </Header>
+
+      <InfantilStatsBar
+        activeCount={activeChildren.length}
+        childrenCount={children.length}
+        guardiansCount={guardians.length}
+        historyCount={history.length}
+      />
+
+      <InfantilNotice notice={notice} onClose={() => setNotice(null)} />
 
       {canManageChildren && (
         <QuickCheckinCard
