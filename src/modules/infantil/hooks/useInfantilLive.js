@@ -1,44 +1,12 @@
-import { useState, useEffect } from 'react';
-import { apiClient } from '../../../services/apiClient.js';
-
-function getAgeFromBirthDate(value) {
-  const birthDate = new Date(value);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDelta = today.getMonth() - birthDate.getMonth();
-
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-
-  return Math.max(0, age);
-}
-
-function getRoomByAge(age) {
-  if (age <= 2) return 'Bercario';
-  if (age <= 5) return 'Maternal';
-  return 'Primarios';
-}
-
-function mapLiveCheckin(item) {
-  const age = getAgeFromBirthDate(item.child.birthDate);
-
-  return {
-    id: item.id,
-    name: item.child.name,
-    checkinTime: item.checkinTime,
-    securityCode: item.securityCode,
-    age,
-    allergies: item.child.allergies,
-    room: getRoomByAge(age),
-  };
-}
+import { useCallback, useEffect, useState } from 'react';
+import { infantilService } from '../services/infantilService.js';
+import { mapLiveCheckin } from '../utils/infantilFormatters.js';
 
 export function useInfantilLive({ enabled = true } = {}) {
   const [activeChildren, setActiveChildren] = useState([]);
   const [isLoading, setIsLoading] = useState(enabled);
 
-  const fetchLive = async () => {
+  const fetchLive = useCallback(async () => {
     if (!enabled) {
       setActiveChildren([]);
       setIsLoading(false);
@@ -47,7 +15,7 @@ export function useInfantilLive({ enabled = true } = {}) {
 
     try {
       setIsLoading(true);
-      const { data } = await apiClient.get('/infantil/live');
+      const data = await infantilService.listLive();
       setActiveChildren(data.map(mapLiveCheckin));
     } catch (error) {
       console.error('Erro ao carregar criancas ativas:', error);
@@ -55,17 +23,17 @@ export function useInfantilLive({ enabled = true } = {}) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [enabled]);
 
   useEffect(() => {
     fetchLive();
-  }, []);
+  }, [fetchLive]);
 
   const addCheckin = async (name, age, allergies) => {
     if (!enabled) return null;
 
     try {
-      const { data } = await apiClient.post('/infantil/checkin', {
+      const data = await infantilService.checkin({
         name,
         age: Number(age),
         allergies: allergies || null,
@@ -82,7 +50,7 @@ export function useInfantilLive({ enabled = true } = {}) {
     if (!enabled) return;
 
     try {
-      await apiClient.delete(`/infantil/checkin?id=${id}`);
+      await infantilService.checkout(id);
       await fetchLive();
     } catch (error) {
       console.error('Erro ao realizar checkout:', error);

@@ -126,6 +126,7 @@ export function LiveClassroomGrid({ children, isLoading, onCheckout, canManage =
                 {child.age} anos • {child.room}
               </Subtitle>
               {child.allergies && <Subtitle style={{ color: '#cd3d3d', fontWeight: 600 }}>Alergia: {child.allergies}</Subtitle>}
+              {child.specialNeeds && <Subtitle>Obs: {child.specialNeeds}</Subtitle>}
             </InfoBlock>
           </Header>
           
