@@ -6,6 +6,7 @@ export function useInfantilAdmin({ enabled = true } = {}) {
   const [activeChildren, setActiveChildren] = useState([]);
   const [children, setChildren] = useState([]);
   const [history, setHistory] = useState([]);
+  const [guardians, setGuardians] = useState([]);
   const [isLoading, setIsLoading] = useState(enabled);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -14,21 +15,24 @@ export function useInfantilAdmin({ enabled = true } = {}) {
       setActiveChildren([]);
       setChildren([]);
       setHistory([]);
+      setGuardians([]);
       setIsLoading(false);
       return;
     }
 
     try {
       setIsLoading(true);
-      const [liveData, childrenData, historyData] = await Promise.all([
+      const [liveData, childrenData, historyData, guardiansData] = await Promise.all([
         infantilService.listLive(),
         infantilService.listChildren(),
         infantilService.listHistory(),
+        infantilService.listGuardians(),
       ]);
 
       setActiveChildren(liveData.map(mapLiveCheckin));
       setChildren(childrenData.map(mapChildRecord));
       setHistory(historyData);
+      setGuardians(guardiansData);
     } catch (error) {
       console.error('Erro ao carregar modulo infantil:', error);
     } finally {
@@ -84,6 +88,7 @@ export function useInfantilAdmin({ enabled = true } = {}) {
   return {
     activeChildren,
     children,
+    guardians,
     history,
     isLoading,
     isSubmitting,

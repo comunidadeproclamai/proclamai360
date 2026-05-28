@@ -113,6 +113,27 @@ export const Input = styled.input`
   }
 `;
 
+export const Select = styled.select`
+  min-height: 2.85rem;
+  padding: 0 1rem;
+  background: ${({ theme }) => theme.colors.surfaceSoft};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  color: ${({ theme }) => theme.colors.ice};
+  font-size: 0.95rem;
+  outline: none;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.gold};
+    box-shadow: 0 0 0 3px rgba(197, 165, 92, 0.12);
+  }
+
+  option {
+    background: ${({ theme }) => theme.colors.charcoal};
+    color: ${({ theme }) => theme.colors.ice};
+  }
+`;
+
 export const MutedText = styled.p`
   color: ${({ theme }) => theme.colors.muted};
   font-size: 0.9rem;

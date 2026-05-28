@@ -2,6 +2,7 @@ import { sendJson } from '../lib/http.js';
 import {
   handleCheckin,
   handleChildren,
+  handleGuardians,
   handleHistory,
   handleLive,
 } from '../modules/infantil/infantil.handler.js';
@@ -21,6 +22,10 @@ export function infantilHandler(req, res) {
 
   if (req.query.action === 'history') {
     return handleHistory(req, res);
+  }
+
+  if (req.query.action === 'guardians') {
+    return handleGuardians(req, res);
   }
 
   return sendJson(res, 404, {

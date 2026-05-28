@@ -24,6 +24,7 @@ export function InfantilPage() {
   const {
     activeChildren,
     children,
+    guardians,
     history,
     isLoading,
     isSubmitting,
@@ -69,6 +70,7 @@ export function InfantilPage() {
 
       {canManageChildren && (
         <QuickCheckinCard
+          guardians={guardians}
           isSubmitting={isSubmitting}
           onSubmit={handleQuickCheckin}
         />
@@ -88,6 +90,7 @@ export function InfantilPage() {
         <ContentGrid>
           <ChildrenRegistryCard
             childrenRecords={children}
+            guardians={guardians}
             isSubmitting={isSubmitting}
             onCreateChild={handleCreateChild}
           />

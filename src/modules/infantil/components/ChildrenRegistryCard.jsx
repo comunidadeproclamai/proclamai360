@@ -2,11 +2,17 @@ import { useState } from 'react';
 import styled from 'styled-components';
 import { Baby, Save } from 'lucide-react';
 import { Button } from '../../../components/common/Button.jsx';
-import { Field, FormGrid, Input, MutedText, Panel, PanelTitle } from './InfantilLayout.js';
+import { Field, FormGrid, Input, MutedText, Panel, PanelTitle, Select } from './InfantilLayout.js';
 
-const initialForm = { name: '', age: '', allergies: '', specialNeeds: '' };
+const initialForm = { name: '', age: '', allergies: '', specialNeeds: '', guardianId: '', relation: 'Responsavel' };
 
-export function ChildrenRegistryCard({ childrenRecords, disabled = false, isSubmitting = false, onCreateChild }) {
+export function ChildrenRegistryCard({
+  childrenRecords,
+  disabled = false,
+  guardians = [],
+  isSubmitting = false,
+  onCreateChild,
+}) {
   const [formData, setFormData] = useState(initialForm);
 
   const updateField = (field, value) => {
@@ -47,7 +53,7 @@ export function ChildrenRegistryCard({ childrenRecords, disabled = false, isSubm
               disabled={disabled || isSubmitting}
             />
           </Field>
-          <Field $span={5}>
+          <Field $span={4}>
             <span>Necessidades especiais</span>
             <Input
               placeholder="Opcional"
@@ -56,7 +62,31 @@ export function ChildrenRegistryCard({ childrenRecords, disabled = false, isSubm
               disabled={disabled || isSubmitting}
             />
           </Field>
-          <Field $span={9}>
+          <Field $span={4}>
+            <span>Responsável principal</span>
+            <Select
+              value={formData.guardianId}
+              onChange={(event) => updateField('guardianId', event.target.value)}
+              disabled={disabled || isSubmitting}
+            >
+              <option value="">Sem vínculo</option>
+              {guardians.map((guardian) => (
+                <option key={guardian.id} value={guardian.id}>
+                  {guardian.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field $span={2}>
+            <span>Parentesco</span>
+            <Input
+              placeholder="Pai, mae..."
+              value={formData.relation}
+              onChange={(event) => updateField('relation', event.target.value)}
+              disabled={disabled || isSubmitting || !formData.guardianId}
+            />
+          </Field>
+          <Field $span={3}>
             <span>Alergias / observações</span>
             <Input
               placeholder="Opcional"
@@ -82,7 +112,10 @@ export function ChildrenRegistryCard({ childrenRecords, disabled = false, isSubm
             <Row key={child.id}>
               <div>
                 <strong>{child.name}</strong>
-                <span>{child.age} anos • {child.room}</span>
+                <span>
+                  {child.age} anos • {child.room}
+                  {child.primaryGuardian ? ` • Resp: ${child.primaryGuardian.name}` : ''}
+                </span>
               </div>
               <Badge>{child.checkinsCount} check-ins</Badge>
             </Row>

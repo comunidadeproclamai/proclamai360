@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { QrCode, UserPlus } from 'lucide-react';
 import { Button } from '../../../components/common/Button.jsx';
-import { Field, FormGrid, Input, Panel, PanelTitle } from './InfantilLayout.js';
+import { Field, FormGrid, Input, Panel, PanelTitle, Select } from './InfantilLayout.js';
 
-const initialForm = { name: '', age: '', allergies: '' };
+const initialForm = { name: '', age: '', allergies: '', guardianId: '' };
 
-export function QuickCheckinCard({ disabled = false, isSubmitting = false, onSubmit }) {
+export function QuickCheckinCard({ disabled = false, guardians = [], isSubmitting = false, onSubmit }) {
   const [formData, setFormData] = useState(initialForm);
 
   const updateField = (field, value) => {
@@ -25,7 +25,7 @@ export function QuickCheckinCard({ disabled = false, isSubmitting = false, onSub
       <PanelTitle><UserPlus size={18} /> Novo check-in rápido</PanelTitle>
       <form onSubmit={handleSubmit}>
         <FormGrid>
-          <Field $span={4}>
+          <Field $span={3}>
             <span>Nome da criança</span>
             <Input
               placeholder="Nome completo"
@@ -34,7 +34,7 @@ export function QuickCheckinCard({ disabled = false, isSubmitting = false, onSub
               disabled={disabled || isSubmitting}
             />
           </Field>
-          <Field $span={2}>
+          <Field $span={1}>
             <span>Idade</span>
             <Input
               type="number"
@@ -46,7 +46,7 @@ export function QuickCheckinCard({ disabled = false, isSubmitting = false, onSub
               disabled={disabled || isSubmitting}
             />
           </Field>
-          <Field $span={4}>
+          <Field $span={3}>
             <span>Alergias / observações</span>
             <Input
               placeholder="Nenhuma"
@@ -54,6 +54,21 @@ export function QuickCheckinCard({ disabled = false, isSubmitting = false, onSub
               onChange={(event) => updateField('allergies', event.target.value)}
               disabled={disabled || isSubmitting}
             />
+          </Field>
+          <Field $span={3}>
+            <span>Responsável</span>
+            <Select
+              value={formData.guardianId}
+              onChange={(event) => updateField('guardianId', event.target.value)}
+              disabled={disabled || isSubmitting}
+            >
+              <option value="">Visitante / geral</option>
+              {guardians.map((guardian) => (
+                <option key={guardian.id} value={guardian.id}>
+                  {guardian.name}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field $span={2}>
             <span>&nbsp;</span>

@@ -51,6 +51,13 @@ function normalizeChildPayload(payload = {}) {
   return { name, birthDate, allergies, specialNeeds };
 }
 
+function normalizeGuardianPayload(payload = {}) {
+  return {
+    guardianId: trimValue(payload.guardianId) || null,
+    relation: trimValue(payload.relation) || 'Responsavel',
+  };
+}
+
 async function getOrCreateDefaultGuardian() {
   const existing = await prisma.member.findFirst({
     where: { name: DEFAULT_GUARDIAN_NAME },
@@ -65,6 +72,57 @@ async function getOrCreateDefaultGuardian() {
       congregation: 'Sede',
     },
   });
+}
+
+async function assertGuardianExists(guardianId) {
+  if (!guardianId) return null;
+
+  const guardian = await prisma.member.findUnique({
+    where: { id: guardianId },
+    select: { id: true, name: true },
+  });
+
+  if (!guardian) {
+    throw createHttpError(404, 'guardian_not_found', 'Responsavel nao encontrado.');
+  }
+
+  return guardian;
+}
+
+async function ensureGuardianLink(childId, guardianId, relation = 'Responsavel') {
+  if (!guardianId) return null;
+
+  await assertGuardianExists(guardianId);
+
+  const [, link] = await prisma.$transaction([
+    prisma.childGuardian.updateMany({
+      where: {
+        childId,
+        memberId: { not: guardianId },
+      },
+      data: { isPrimary: false },
+    }),
+    prisma.childGuardian.upsert({
+      where: {
+        childId_memberId: {
+          childId,
+          memberId: guardianId,
+        },
+      },
+      update: {
+        relation,
+        isPrimary: true,
+      },
+      create: {
+        childId,
+        memberId: guardianId,
+        relation,
+        isPrimary: true,
+      },
+    }),
+  ]);
+
+  return link;
 }
 
 async function findChildByName(name) {
@@ -142,6 +200,36 @@ export async function listChildren(query = {}) {
   });
 }
 
+export async function listGuardianOptions(query = {}) {
+  const search = trimValue(query.search);
+
+  return prisma.member.findMany({
+    where: {
+      AND: [
+        { status: { in: ['ACTIVE', 'VISITOR'] } },
+        search
+          ? {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { phone: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
+              ],
+            }
+          : {},
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      status: true,
+    },
+    orderBy: { name: 'asc' },
+    take: 100,
+  });
+}
+
 export async function listCheckinHistory(query = {}) {
   const requestedLimit = Number(query.limit || 20);
   const limit = Number.isFinite(requestedLimit)
@@ -164,6 +252,7 @@ export async function listCheckinHistory(query = {}) {
 
 export async function createChild(authenticatedUser, payload = {}) {
   const data = normalizeChildPayload(payload);
+  const guardian = normalizeGuardianPayload(payload);
   const existing = await findChildByName(data.name);
 
   if (existing) {
@@ -171,10 +260,14 @@ export async function createChild(authenticatedUser, payload = {}) {
   }
 
   const child = await prisma.child.create({ data });
+  if (guardian.guardianId) {
+    await ensureGuardianLink(child.id, guardian.guardianId, guardian.relation);
+  }
 
   await auditAction(authenticatedUser, 'child.create', {
     childId: child.id,
     childName: child.name,
+    guardianId: guardian.guardianId,
   });
 
   return child;
@@ -206,7 +299,8 @@ async function resolveCheckinChild(payload = {}) {
 
 export async function checkinChild(authenticatedUser, payload = {}) {
   const child = await resolveCheckinChild(payload);
-  const guardianId = payload.guardianId || (await getOrCreateDefaultGuardian()).id;
+  const guardian = normalizeGuardianPayload(payload);
+  const guardianId = guardian.guardianId || (await getOrCreateDefaultGuardian()).id;
 
   const activeCheckin = await prisma.childCheckin.findFirst({
     where: {
@@ -219,6 +313,8 @@ export async function checkinChild(authenticatedUser, payload = {}) {
   if (activeCheckin) {
     throw createHttpError(409, 'child_already_checked_in', 'Esta crianca ja esta em sala.');
   }
+
+  await ensureGuardianLink(child.id, guardianId, guardian.relation);
 
   const checkin = await prisma.childCheckin.create({
     data: {

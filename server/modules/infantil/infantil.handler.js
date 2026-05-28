@@ -9,6 +9,7 @@ import {
   listActiveCheckins,
   listChildren,
   listCheckinHistory,
+  listGuardianOptions,
 } from './infantil.service.js';
 
 async function ensureChildrenReader(req) {
@@ -51,6 +52,12 @@ export async function handleHistory(req, res) {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
   await ensureChildrenReader(req);
   return sendJson(res, 200, await listCheckinHistory(req.query));
+}
+
+export async function handleGuardians(req, res) {
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+  await ensureChildrenReader(req);
+  return sendJson(res, 200, await listGuardianOptions(req.query));
 }
 
 export async function handleCheckin(req, res) {
