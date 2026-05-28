@@ -79,6 +79,19 @@ export function useInfantilAdmin({ enabled = true } = {}) {
     }
   };
 
+  const createGuardian = async (payload) => {
+    if (!enabled) return null;
+
+    try {
+      setIsSubmitting(true);
+      const guardian = await infantilService.createGuardian(payload);
+      await loadInfantilData();
+      return guardian;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const checkoutChild = async (id) => {
     if (!enabled) return;
     await infantilService.checkout(id);
@@ -94,6 +107,7 @@ export function useInfantilAdmin({ enabled = true } = {}) {
     isSubmitting,
     createQuickCheckin,
     createChild,
+    createGuardian,
     checkoutChild,
     refresh: loadInfantilData,
   };

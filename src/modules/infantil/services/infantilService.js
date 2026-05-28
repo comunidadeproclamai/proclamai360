@@ -21,6 +21,11 @@ export const infantilService = {
     return data;
   },
 
+  async createGuardian(payload) {
+    const { data } = await apiClient.post('/infantil/guardians', payload);
+    return data;
+  },
+
   async createChild(payload) {
     const { data } = await apiClient.post('/infantil/children', payload);
     return data;

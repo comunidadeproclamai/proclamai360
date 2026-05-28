@@ -6,6 +6,7 @@ import {
   checkinChild,
   checkoutChild,
   createChild,
+  createGuardianOption,
   listActiveCheckins,
   listChildren,
   listCheckinHistory,
@@ -55,9 +56,17 @@ export async function handleHistory(req, res) {
 }
 
 export async function handleGuardians(req, res) {
-  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
-  await ensureChildrenReader(req);
-  return sendJson(res, 200, await listGuardianOptions(req.query));
+  if (req.method === 'GET') {
+    await ensureChildrenReader(req);
+    return sendJson(res, 200, await listGuardianOptions(req.query));
+  }
+
+  if (req.method === 'POST') {
+    const authenticatedUser = await ensureChildrenManager(req);
+    return sendJson(res, 201, await createGuardianOption(authenticatedUser, req.body));
+  }
+
+  return methodNotAllowed(res, ['GET', 'POST']);
 }
 
 export async function handleCheckin(req, res) {

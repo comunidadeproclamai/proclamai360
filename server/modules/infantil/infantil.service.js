@@ -58,6 +58,18 @@ function normalizeGuardianPayload(payload = {}) {
   };
 }
 
+function normalizeGuardianOptionPayload(payload = {}) {
+  const name = trimValue(payload.name);
+  const email = trimValue(payload.email) || null;
+  const phone = trimValue(payload.phone) || null;
+
+  if (!name) {
+    throw createHttpError(400, 'validation_error', 'Nome do responsavel e obrigatorio.');
+  }
+
+  return { name, email, phone };
+}
+
 async function getOrCreateDefaultGuardian() {
   const existing = await prisma.member.findFirst({
     where: { name: DEFAULT_GUARDIAN_NAME },
@@ -228,6 +240,53 @@ export async function listGuardianOptions(query = {}) {
     orderBy: { name: 'asc' },
     take: 100,
   });
+}
+
+export async function createGuardianOption(authenticatedUser, payload = {}) {
+  const data = normalizeGuardianOptionPayload(payload);
+  const existingFilters = [
+    { name: { equals: data.name, mode: 'insensitive' } },
+  ];
+
+  if (data.email) existingFilters.push({ email: data.email });
+  if (data.phone) existingFilters.push({ phone: data.phone });
+
+  const existing = await prisma.member.findFirst({
+    where: {
+      OR: existingFilters,
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      status: true,
+    },
+  });
+
+  if (existing) return existing;
+
+  const guardian = await prisma.member.create({
+    data: {
+      ...data,
+      status: 'VISITOR',
+      congregation: 'Visitante',
+    },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      email: true,
+      status: true,
+    },
+  });
+
+  await auditAction(authenticatedUser, 'child.guardian.create', {
+    guardianId: guardian.id,
+    name: guardian.name,
+  });
+
+  return guardian;
 }
 
 export async function listCheckinHistory(query = {}) {

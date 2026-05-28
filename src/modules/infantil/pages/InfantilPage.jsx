@@ -5,6 +5,7 @@ import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
 import { useAuth } from '../../auth/hooks/useAuth.js';
 import { CheckinHistoryCard } from '../components/CheckinHistoryCard.jsx';
 import { ChildrenRegistryCard } from '../components/ChildrenRegistryCard.jsx';
+import { GuardianRegistryCard } from '../components/GuardianRegistryCard.jsx';
 import {
   ContentGrid,
   Header,
@@ -30,6 +31,7 @@ export function InfantilPage() {
     isSubmitting,
     createQuickCheckin,
     createChild,
+    createGuardian,
     checkoutChild,
   } = useInfantilAdmin();
   const [generatedCode, setGeneratedCode] = useState(null);
@@ -48,6 +50,14 @@ export function InfantilPage() {
       await createChild(payload);
     } catch (error) {
       alert(error.response?.data?.message || 'Nao foi possivel cadastrar a crianca.');
+    }
+  };
+
+  const handleCreateGuardian = async (payload) => {
+    try {
+      await createGuardian(payload);
+    } catch (error) {
+      alert(error.response?.data?.message || 'Nao foi possivel cadastrar o responsavel.');
     }
   };
 
@@ -94,7 +104,14 @@ export function InfantilPage() {
             isSubmitting={isSubmitting}
             onCreateChild={handleCreateChild}
           />
-          <CheckinHistoryCard records={history} />
+          <SideStack>
+            <GuardianRegistryCard
+              guardians={guardians}
+              isSubmitting={isSubmitting}
+              onCreateGuardian={handleCreateGuardian}
+            />
+            <CheckinHistoryCard records={history} />
+          </SideStack>
         </ContentGrid>
       )}
 
@@ -120,6 +137,12 @@ const CodeOverlay = styled.div`
   justify-content: center;
   padding: 1rem;
   z-index: 2000;
+`;
+
+const SideStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 `;
 
 const CodeCard = styled.div`
