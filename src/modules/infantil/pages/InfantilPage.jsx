@@ -83,6 +83,8 @@ export function InfantilPage() {
 
       {canManageChildren && (
         <QuickCheckinCard
+          activeChildren={activeChildren}
+          childrenRecords={children}
           guardians={guardians}
           isSubmitting={isSubmitting}
           onSubmit={handleQuickCheckin}

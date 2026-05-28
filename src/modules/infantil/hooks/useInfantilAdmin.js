@@ -49,11 +49,17 @@ export function useInfantilAdmin({ enabled = true } = {}) {
 
     try {
       setIsSubmitting(true);
-      const checkin = await infantilService.checkin({
-        ...payload,
-        age: Number(payload.age),
-        allergies: payload.allergies || null,
-      });
+      const checkinPayload = payload.childId
+        ? {
+            childId: payload.childId,
+            guardianId: payload.guardianId || null,
+          }
+        : {
+            ...payload,
+            age: Number(payload.age),
+            allergies: payload.allergies || null,
+          };
+      const checkin = await infantilService.checkin(checkinPayload);
       await loadInfantilData();
       return checkin.securityCode;
     } finally {
