@@ -92,10 +92,16 @@ export function useInfantilAdmin({ enabled = true } = {}) {
     }
   };
 
-  const checkoutChild = async (id) => {
+  const checkoutChild = async (id, securityCode) => {
     if (!enabled) return;
-    await infantilService.checkout(id);
-    await loadInfantilData();
+
+    try {
+      setIsSubmitting(true);
+      await infantilService.checkout(id, securityCode);
+      await loadInfantilData();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {

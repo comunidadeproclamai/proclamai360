@@ -82,7 +82,9 @@ export async function handleCheckin(req, res) {
       throw createHttpError(400, 'validation_error', 'ID do check-in e obrigatorio.');
     }
 
-    return sendJson(res, 200, await checkoutChild(authenticatedUser, id));
+    return sendJson(res, 200, await checkoutChild(authenticatedUser, id, {
+      securityCode: req.body?.securityCode || req.query.securityCode,
+    }));
   }
 
   return methodNotAllowed(res, ['POST', 'DELETE', 'PATCH']);

@@ -4,6 +4,7 @@ import { AlertCircle } from 'lucide-react';
 import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
 import { useAuth } from '../../auth/hooks/useAuth.js';
 import { CheckinHistoryCard } from '../components/CheckinHistoryCard.jsx';
+import { CheckoutConfirmationModal } from '../components/CheckoutConfirmationModal.jsx';
 import { ChildrenRegistryCard } from '../components/ChildrenRegistryCard.jsx';
 import { GuardianRegistryCard } from '../components/GuardianRegistryCard.jsx';
 import {
@@ -35,6 +36,7 @@ export function InfantilPage() {
     checkoutChild,
   } = useInfantilAdmin();
   const [generatedCode, setGeneratedCode] = useState(null);
+  const [pendingCheckout, setPendingCheckout] = useState(null);
 
   const handleQuickCheckin = async (payload) => {
     try {
@@ -61,9 +63,10 @@ export function InfantilPage() {
     }
   };
 
-  const handleCheckout = async (id) => {
+  const handleCheckout = async (child, securityCode) => {
     try {
-      await checkoutChild(id);
+      await checkoutChild(child.id, securityCode);
+      setPendingCheckout(null);
     } catch (error) {
       alert(error.response?.data?.message || 'Nao foi possivel realizar o check-out.');
     }
@@ -91,7 +94,7 @@ export function InfantilPage() {
         <LiveClassroomGrid
           children={activeChildren}
           isLoading={isLoading}
-          onCheckout={handleCheckout}
+          onCheckout={setPendingCheckout}
           canManage={canManageChildren}
         />
       </section>
@@ -124,6 +127,13 @@ export function InfantilPage() {
           </CodeCard>
         </CodeOverlay>
       )}
+
+      <CheckoutConfirmationModal
+        child={pendingCheckout}
+        isSubmitting={isSubmitting}
+        onClose={() => setPendingCheckout(null)}
+        onConfirm={handleCheckout}
+      />
     </PageContainer>
   );
 }

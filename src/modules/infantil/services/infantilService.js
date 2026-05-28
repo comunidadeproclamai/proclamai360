@@ -36,8 +36,8 @@ export const infantilService = {
     return data;
   },
 
-  async checkout(id) {
-    const { data } = await apiClient.delete(`/infantil/checkin?id=${id}`);
+  async checkout(id, securityCode) {
+    const { data } = await apiClient.patch('/infantil/checkin', { id, securityCode });
     return data;
   },
 };

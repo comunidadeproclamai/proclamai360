@@ -136,7 +136,7 @@ export function LiveClassroomGrid({ children, isLoading, onCheckout, canManage =
           <Actions>
             <Subtitle style={{ marginRight: 'auto' }}><Clock size={14}/> Entrou às {formatTime(child.checkinTime)}</Subtitle>
             {canManage && (
-              <CheckoutButton onClick={() => onCheckout(child.id)}>
+              <CheckoutButton onClick={() => onCheckout(child)}>
                 <LogOut size={16} /> Check-out
               </CheckoutButton>
             )}

@@ -70,6 +70,11 @@ function normalizeGuardianOptionPayload(payload = {}) {
   return { name, email, phone };
 }
 
+function normalizeSecurityCode(value) {
+  const code = trimValue(value);
+  return code ? code.toUpperCase() : '';
+}
+
 async function getOrCreateDefaultGuardian() {
   const existing = await prisma.member.findFirst({
     where: { name: DEFAULT_GUARDIAN_NAME },
@@ -394,14 +399,30 @@ export async function checkinChild(authenticatedUser, payload = {}) {
   return checkin;
 }
 
-export async function checkoutChild(authenticatedUser, id) {
+export async function checkoutChild(authenticatedUser, id, payload = {}) {
+  const securityCode = normalizeSecurityCode(payload.securityCode);
+
+  if (!securityCode) {
+    throw createHttpError(400, 'validation_error', 'Informe o codigo do ticket para liberar a crianca.');
+  }
+
   const activeCheckin = await prisma.childCheckin.findFirst({
     where: { id, checkoutTime: null },
-    select: { id: true, childId: true, guardianId: true },
+    select: { id: true, childId: true, guardianId: true, securityCode: true },
   });
 
   if (!activeCheckin) {
     throw createHttpError(404, 'active_checkin_not_found', 'Check-in ativo nao encontrado.');
+  }
+
+  if (activeCheckin.securityCode !== securityCode) {
+    await auditAction(authenticatedUser, 'child.checkout.denied', {
+      checkinId: activeCheckin.id,
+      childId: activeCheckin.childId,
+      guardianId: activeCheckin.guardianId,
+    });
+
+    throw createHttpError(403, 'invalid_checkout_code', 'Codigo do ticket nao confere.');
   }
 
   const checkin = await prisma.childCheckin.update({

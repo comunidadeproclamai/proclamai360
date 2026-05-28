@@ -46,11 +46,11 @@ export function useInfantilLive({ enabled = true } = {}) {
     }
   };
 
-  const doCheckout = async (id) => {
+  const doCheckout = async (id, securityCode) => {
     if (!enabled) return;
 
     try {
-      await infantilService.checkout(id);
+      await infantilService.checkout(id, securityCode);
       await fetchLive();
     } catch (error) {
       console.error('Erro ao realizar checkout:', error);
