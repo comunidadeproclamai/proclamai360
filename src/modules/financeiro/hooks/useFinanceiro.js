@@ -1,16 +1,33 @@
 import { useState, useEffect, useCallback } from 'react';
-import { apiClient } from '../../../services/apiClient.js';
+import { financeiroService } from '../services/financeiroService.js';
+
+function getCurrentMonthFilters() {
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  return {
+    search: '',
+    type: '',
+    accountId: '',
+    categoryId: '',
+    startDate: startDate.toISOString().slice(0, 10),
+    endDate: endDate.toISOString().slice(0, 10),
+  };
+}
 
 export function useFinanceiro({ enabled = true } = {}) {
   const [transactions, setTransactions] = useState([]);
-  const [summary, setSummary] = useState({ balance: 0, totalInflow: 0, totalOutflow: 0 });
+  const [summary, setSummary] = useState({ balance: 0, totalInflow: 0, totalOutflow: 0, periodResult: 0, accounts: [] });
   const [supportData, setSupportData] = useState({ accounts: [], categories: [] });
+  const [filters, setFilters] = useState(getCurrentMonthFilters);
   const [isLoading, setIsLoading] = useState(enabled);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchDashboard = useCallback(async () => {
     if (!enabled) {
       setTransactions([]);
-      setSummary({ balance: 0, totalInflow: 0, totalOutflow: 0 });
+      setSummary({ balance: 0, totalInflow: 0, totalOutflow: 0, periodResult: 0, accounts: [] });
       setSupportData({ accounts: [], categories: [] });
       setIsLoading(false);
       return;
@@ -18,21 +35,21 @@ export function useFinanceiro({ enabled = true } = {}) {
 
     try {
       setIsLoading(true);
-      const [summaryRes, txRes, supportRes] = await Promise.all([
-        apiClient.get('/financial/summary'),
-        apiClient.get('/financial/transactions'),
-        apiClient.get('/financial/support-data'),
+      const [summaryData, transactionsData, supportDataResponse] = await Promise.all([
+        financeiroService.getSummary(filters),
+        financeiroService.getTransactions(filters),
+        financeiroService.getSupportData(),
       ]);
 
-      setSummary(summaryRes.data);
-      setTransactions(txRes.data);
-      setSupportData(supportRes.data);
+      setSummary(summaryData);
+      setTransactions(transactionsData);
+      setSupportData(supportDataResponse);
     } catch (error) {
       console.error('Erro ao carregar dados financeiros', error);
     } finally {
       setIsLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, filters]);
 
   useEffect(() => {
     fetchDashboard();
@@ -42,36 +59,51 @@ export function useFinanceiro({ enabled = true } = {}) {
     if (!enabled) return false;
 
     try {
-      await apiClient.post('/financial/transactions', txData);
+      setIsSubmitting(true);
+      await financeiroService.createTransaction(txData);
       await fetchDashboard();
       return true;
     } catch (error) {
       console.error('Erro ao salvar transacao', error);
       throw error;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const deleteTransaction = async (id) => {
     if (!enabled) return;
 
-    if (!window.confirm('Tem certeza que deseja excluir esta transacao? O saldo da conta sera recalculado.')) {
-      return;
-    }
-
     try {
-      await apiClient.delete(`/financial/transactions/${id}`);
+      setIsSubmitting(true);
+      await financeiroService.deleteTransaction(id);
       await fetchDashboard();
     } catch (error) {
       console.error('Erro ao excluir transacao', error);
+      throw error;
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const updateFilter = (field, value) => {
+    setFilters((current) => ({ ...current, [field]: value }));
+  };
+
+  const resetFilters = () => {
+    setFilters(getCurrentMonthFilters());
   };
 
   return {
     transactions,
     summary,
     supportData,
+    filters,
     isLoading,
+    isSubmitting,
     addTransaction,
     deleteTransaction,
+    updateFilter,
+    resetFilters,
   };
 }
