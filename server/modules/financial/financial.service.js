@@ -329,3 +329,82 @@ export async function updateTransaction(authenticatedUser, id, payload = {}) {
 
   return mapTransaction(updatedTransaction);
 }
+
+export async function bulkCreateTransactions(authenticatedUser, transactionsPayload = []) {
+  if (!Array.isArray(transactionsPayload) || transactionsPayload.length === 0) {
+    throw createHttpError(400, 'validation_error', 'Nenhuma transação para importar.');
+  }
+
+  const normalized = transactionsPayload.map(normalizeTransactionPayload);
+
+  // Group balances by account
+  const accountAdjustments = {};
+  for (const data of normalized) {
+    if (!accountAdjustments[data.accountId]) accountAdjustments[data.accountId] = 0;
+    accountAdjustments[data.accountId] += (data.type === 'OUTFLOW' ? -data.amount : data.amount);
+  }
+
+  const operations = [];
+
+  // 1. Create all transactions
+  operations.push(prisma.financialTransaction.createMany({
+    data: normalized.map(t => ({ ...t, createdById: authenticatedUser.id }))
+  }));
+
+  // 2. Update all accounts
+  for (const [accountId, adjustment] of Object.entries(accountAdjustments)) {
+    if (adjustment !== 0) {
+      operations.push(prisma.financialAccount.update({
+        where: { id: accountId },
+        data: {
+          balance: adjustment > 0 ? { increment: adjustment } : { decrement: Math.abs(adjustment) }
+        }
+      }));
+    }
+  }
+
+  await prisma.$transaction(operations);
+
+  await auditAction(authenticatedUser, 'financial.transaction.bulk_create', {
+    count: normalized.length,
+    accountsAffected: Object.keys(accountAdjustments).length
+  });
+
+  return { success: true, count: normalized.length };
+}
+
+export async function getFinancialChartData(query = {}) {
+  const where = buildTransactionWhere(query);
+
+  const transactions = await prisma.financialTransaction.findMany({
+    where,
+    select: {
+      date: true,
+      amount: true,
+      type: true,
+      category: { select: { name: true } }
+    },
+    orderBy: { date: 'asc' }
+  });
+
+  const daily = {};
+  const categories = {};
+
+  transactions.forEach(tx => {
+    const dateStr = tx.date.toISOString().split('T')[0];
+    
+    // Daily
+    if (!daily[dateStr]) daily[dateStr] = { date: dateStr, INFLOW: 0, OUTFLOW: 0 };
+    daily[dateStr][tx.type] += Number(tx.amount);
+
+    // Categories
+    const catName = tx.category.name;
+    if (!categories[catName]) categories[catName] = { name: catName, INFLOW: 0, OUTFLOW: 0 };
+    categories[catName][tx.type] += Number(tx.amount);
+  });
+
+  return {
+    daily: Object.values(daily),
+    categories: Object.values(categories)
+  };
+}

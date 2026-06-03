@@ -4,6 +4,8 @@ import { Plus, Search, X } from 'lucide-react';
 import { BalanceCards } from '../components/BalanceCards.jsx';
 import { TransactionModal } from '../components/TransactionModal.jsx';
 import { TransactionsTable } from '../components/TransactionsTable.jsx';
+import { ImportTransactionsModal } from '../components/ImportTransactionsModal.jsx';
+import { FinancialReportCharts } from '../components/FinancialReportCharts.jsx';
 import { useFinanceiro } from '../hooks/useFinanceiro.js';
 import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
 import { useAuth } from '../../auth/hooks/useAuth.js';
@@ -30,11 +32,14 @@ export function FinanceiroPage() {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    importTransactions,
     updateFilter,
     resetFilters,
   } = useFinanceiro();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'charts'
   const [transactionToEdit, setTransactionToEdit] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
 
@@ -97,10 +102,15 @@ export function FinanceiroPage() {
             disabled={transactions.length === 0} 
           />
           {canManageFinance && (
-            <PrimaryButton type="button" onClick={handleAddNew}>
-              <Plus size={20} />
-              Lançar Valor
-            </PrimaryButton>
+            <>
+              <SecondaryButton type="button" onClick={() => setIsImportModalOpen(true)}>
+                Importar Extrato
+              </SecondaryButton>
+              <PrimaryButton type="button" onClick={handleAddNew}>
+                <Plus size={20} />
+                Lançar Valor
+              </PrimaryButton>
+            </>
           )}
         </HeaderActions>
       </Header>
@@ -170,23 +180,51 @@ export function FinanceiroPage() {
         </ResetButton>
       </FiltersBar>
 
-      <Statement>
-        <StatementHeader>
-          <h2>Extrato</h2>
-          <span>{transactions.length} lançamentos na página</span>
-        </StatementHeader>
-        
-        <TransactionsTable 
-          transactions={transactions}
-          isLoading={isLoading}
-          onDelete={(id) => setPendingDelete(transactions.find(t => t.id === id))}
-          onEdit={handleEdit}
-          canManage={canManageFinance}
-        />
-      </Statement>
+      <ViewToggle>
+        <ToggleButton $active={viewMode === 'table'} onClick={() => setViewMode('table')}>
+          Extrato Detalhado
+        </ToggleButton>
+        <ToggleButton $active={viewMode === 'charts'} onClick={() => setViewMode('charts')}>
+          Relatório em Gráficos
+        </ToggleButton>
+      </ViewToggle>
 
-      {!isLoading && transactions.length > 0 && (
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+      {viewMode === 'charts' ? (
+        <FinancialReportCharts filters={filters} />
+      ) : (
+        <>
+          <Statement>
+            <StatementHeader>
+              <h2>Extrato</h2>
+              <span>{transactions.length} lançamentos na página</span>
+            </StatementHeader>
+            
+            <TransactionsTable 
+              transactions={transactions}
+              isLoading={isLoading}
+              onDelete={(id) => setPendingDelete(transactions.find(t => t.id === id))}
+              onEdit={handleEdit}
+              canManage={canManageFinance}
+            />
+          </Statement>
+
+          {!isLoading && transactions.length > 0 && (
+            <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+          )}
+        </>
+      )}
+
+      {isImportModalOpen && canManageFinance && (
+        <ImportTransactionsModal
+          isOpen={isImportModalOpen}
+          isSubmitting={isSubmitting}
+          onClose={() => setIsImportModalOpen(false)}
+          supportData={supportData}
+          onImport={async (payload) => {
+            const success = await importTransactions(payload);
+            if (success) setIsImportModalOpen(false);
+          }}
+        />
       )}
 
       {isModalOpen && canManageFinance && (
@@ -269,6 +307,46 @@ const PrimaryButton = styled.button`
 
   &:hover {
     background: ${({ theme }) => theme.colors.wineLight};
+  }
+`;
+
+const SecondaryButton = styled.button`
+  min-height: 2.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.25rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.md};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.ice};
+  font-weight: 600;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.surfaceSoft};
+  }
+`;
+
+const ViewToggle = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.4rem;
+  border-radius: ${({ theme }) => theme.radii.md};
+  width: fit-content;
+`;
+
+const ToggleButton = styled.button`
+  padding: 0.6rem 1.25rem;
+  background: ${({ $active, theme }) => $active ? theme.colors.wine : 'transparent'};
+  color: ${({ $active, theme }) => $active ? 'white' : theme.colors.muted};
+  border: 1px solid ${({ $active }) => $active ? 'rgba(197, 165, 92, 0.15)' : 'transparent'};
+  border-radius: ${({ theme }) => theme.radii.sm};
+  font-weight: 800;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: ${({ $active, theme }) => !$active && theme.colors.ice};
   }
 `;
 

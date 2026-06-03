@@ -4,6 +4,8 @@ import {
   handleFinancialSupportData,
   handleFinancialTransactionById,
   handleFinancialTransactions,
+  handleFinancialBulk,
+  handleFinancialCharts,
 } from '../modules/financial/financial.handler.js';
 
 export function financialHandler(req, res) {
@@ -17,6 +19,14 @@ export function financialHandler(req, res) {
 
   if (req.query.route === 'transactions') {
     return handleFinancialTransactions(req, res);
+  }
+
+  if (req.query.route === 'transactions/bulk') {
+    return handleFinancialBulk(req, res);
+  }
+
+  if (req.query.route === 'charts') {
+    return handleFinancialCharts(req, res);
   }
 
   return sendJson(res, 404, {

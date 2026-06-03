@@ -23,6 +23,16 @@ export const financeiroService = {
     return data;
   },
 
+  async importTransactions(transactions) {
+    const { data } = await apiClient.post('/financial/transactions/bulk', { transactions });
+    return data;
+  },
+
+  async getChartData(filters = {}) {
+    const { data } = await apiClient.get('/financial/charts', { params: filters });
+    return data;
+  },
+
   async deleteTransaction(id) {
     const { data } = await apiClient.delete(`/financial/transactions/${id}`);
     return data;

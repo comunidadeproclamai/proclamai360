@@ -107,6 +107,22 @@ export function useFinanceiro({ enabled = true } = {}) {
     }
   };
 
+  const importTransactions = async (transactions) => {
+    if (!enabled) return false;
+    try {
+      setIsSubmitting(true);
+      const res = await financeiroService.importTransactions(transactions);
+      toast.success(`${res.count} lançamentos importados com sucesso!`);
+      await fetchDashboard();
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Erro ao importar transações.');
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const deleteTransaction = async (id) => {
     if (!enabled) return;
     try {
@@ -145,6 +161,7 @@ export function useFinanceiro({ enabled = true } = {}) {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    importTransactions,
     updateFilter,
     resetFilters,
   };

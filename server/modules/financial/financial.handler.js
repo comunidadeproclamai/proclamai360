@@ -8,6 +8,9 @@ import {
   getFinancialSummary,
   getSupportData,
   listTransactions,
+  updateTransaction,
+  bulkCreateTransactions,
+  getFinancialChartData,
 } from './financial.service.js';
 
 async function ensureFinanceReader(req) {
@@ -63,4 +66,16 @@ export async function handleFinancialTransactionById(req, res) {
   }
 
   return methodNotAllowed(res, ['PUT', 'DELETE']);
+}
+
+export async function handleFinancialBulk(req, res) {
+  if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
+  const authenticatedUser = await ensureFinanceManager(req);
+  return sendJson(res, 201, await bulkCreateTransactions(authenticatedUser, req.body.transactions || req.body));
+}
+
+export async function handleFinancialCharts(req, res) {
+  if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
+  await ensureFinanceReader(req);
+  return sendJson(res, 200, await getFinancialChartData(req.query));
 }
