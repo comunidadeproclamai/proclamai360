@@ -108,9 +108,20 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
             } else if (parts[0]?.length === 4) {
               // YYYY/MM/DD
               date = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T12:00:00Z`);
+            } else {
+              date = new Date(strDate);
             }
           } else if (strDate.includes('-')) {
-            date = new Date(strDate);
+            const parts = strDate.split('-');
+            // If DD-MM-YYYY
+            if (parts[2]?.length === 4) {
+              date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00Z`);
+            } else if (parts[0]?.length === 4) {
+              // YYYY-MM-DD
+              date = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T12:00:00Z`);
+            } else {
+              date = new Date(strDate);
+            }
           } else if (!isNaN(Number(strDate))) {
             // Excel serial date fallback
             date = new Date(Math.round((Number(strDate) - 25569) * 86400 * 1000));

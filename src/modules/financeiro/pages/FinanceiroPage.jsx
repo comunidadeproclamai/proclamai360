@@ -73,11 +73,11 @@ export function FinanceiroPage() {
 
   const exportColumns = [
     { key: 'description', label: 'Descrição' },
-    { key: 'category', label: 'Categoria' },
-    { key: 'account', label: 'Conta' },
-    { key: 'type', label: 'Tipo', render: (val) => val === 'INFLOW' ? 'RECEITA' : 'DESPESA' },
-    { key: 'amount', label: 'Valor', render: (val) => formatCurrency(val) },
-    { key: 'date', label: 'Data', render: (val) => new Date(val).toLocaleDateString('pt-BR') },
+    { key: 'category', label: 'Categoria', exportRender: (val, row) => row.category?.name || '-' },
+    { key: 'account', label: 'Conta', exportRender: (val, row) => row.account?.name || '-' },
+    { key: 'type', label: 'Tipo', exportRender: (val) => val === 'INFLOW' ? 'RECEITA' : 'DESPESA', render: (val) => val === 'INFLOW' ? 'RECEITA' : 'DESPESA' },
+    { key: 'amount', label: 'Valor', exportRender: (val) => formatCurrency(val), render: (val) => formatCurrency(val) },
+    { key: 'date', label: 'Data', exportRender: (val) => new Date(val).toLocaleDateString('pt-BR'), render: (val) => new Date(val).toLocaleDateString('pt-BR') },
   ];
 
   const handleExportExcel = async () => {
