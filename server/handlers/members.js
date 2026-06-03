@@ -4,6 +4,30 @@ import { createHttpError, methodNotAllowed, sendJson } from '../lib/http.js';
 import { PERMISSIONS } from '../lib/permissions.js';
 import { prisma, requireDatabase } from '../lib/prisma.js';
 
+function extractMemberData(body) {
+  return {
+    name: body.name,
+    email: body.email || null,
+    phone: body.phone || null,
+    cpf: body.cpf || null,
+    birthDate: body.birthDate ? new Date(body.birthDate) : null,
+    gender: body.gender || null,
+    photoUrl: body.photoUrl || null,
+    street: body.street || null,
+    number: body.number || null,
+    complement: body.complement || null,
+    neighborhood: body.neighborhood || null,
+    city: body.city || null,
+    state: body.state || null,
+    zipCode: body.zipCode || null,
+    status: body.status || 'ACTIVE',
+    baptismDate: body.baptismDate ? new Date(body.baptismDate) : null,
+    membershipDate: body.membershipDate ? new Date(body.membershipDate) : null,
+    congregation: body.congregation || null,
+    notes: body.notes || null,
+  };
+}
+
 export async function membersHandler(req, res) {
   requireDatabase();
   const authenticatedUser = await getAuthenticatedUser(req);
@@ -20,6 +44,7 @@ export async function membersHandler(req, res) {
               OR: [
                 { name: { contains: search, mode: 'insensitive' } },
                 { email: { contains: search, mode: 'insensitive' } },
+                { cpf: { contains: search } },
               ],
             }
           : {},
@@ -51,17 +76,21 @@ export async function membersHandler(req, res) {
 
     const body = req.body || {};
     if (!body.name) {
-      throw createHttpError(400, 'validation_error', 'O nome e obrigatorio.');
+      throw createHttpError(400, 'validation_error', 'O nome é obrigatório.');
+    }
+
+    if (body.cpf) {
+      const existingCpf = await prisma.member.findUnique({ where: { cpf: body.cpf } });
+      if (existingCpf) throw createHttpError(400, 'validation_error', 'CPF já cadastrado.');
+    }
+
+    if (body.email) {
+      const existingEmail = await prisma.member.findFirst({ where: { email: body.email } });
+      if (existingEmail) throw createHttpError(400, 'validation_error', 'E-mail já cadastrado.');
     }
 
     const member = await prisma.member.create({
-      data: {
-        name: body.name,
-        email: body.email || null,
-        phone: body.phone || null,
-        status: body.status || 'ACTIVE',
-        congregation: body.congregation || null,
-      },
+      data: extractMemberData(body),
     });
 
     await auditAction(authenticatedUser, 'member.create', {
@@ -80,14 +109,41 @@ export async function memberByIdHandler(req, res) {
   const authenticatedUser = await getAuthenticatedUser(req);
   const { id } = req.query;
 
+  if (req.method === 'GET') {
+    requirePermission(authenticatedUser, PERMISSIONS.MEMBERS_READ);
+    const member = await prisma.member.findUnique({ where: { id } });
+    if (!member) throw createHttpError(404, 'not_found', 'Membro não encontrado.');
+    return sendJson(res, 200, member);
+  }
+
   if (req.method === 'PUT') {
     requirePermission(authenticatedUser, PERMISSIONS.MEMBERS_WRITE);
+    
+    const body = req.body || {};
+    if (!body.name) {
+      throw createHttpError(400, 'validation_error', 'O nome é obrigatório.');
+    }
 
-    const member = await prisma.member.update({ where: { id }, data: req.body });
+    if (body.cpf) {
+      const existingCpf = await prisma.member.findFirst({ where: { cpf: body.cpf, id: { not: id } } });
+      if (existingCpf) throw createHttpError(400, 'validation_error', 'CPF já cadastrado por outro membro.');
+    }
+
+    if (body.email) {
+      const existingEmail = await prisma.member.findFirst({ where: { email: body.email, id: { not: id } } });
+      if (existingEmail) throw createHttpError(400, 'validation_error', 'E-mail já cadastrado por outro membro.');
+    }
+
+    const member = await prisma.member.update({
+      where: { id },
+      data: extractMemberData(body),
+    });
+
     await auditAction(authenticatedUser, 'member.update', {
       memberId: member.id,
       name: member.name,
     });
+    
     return sendJson(res, 200, member);
   }
 
@@ -105,5 +161,5 @@ export async function memberByIdHandler(req, res) {
     return sendJson(res, 200, { message: 'Membro inativado com sucesso.', data: member });
   }
 
-  return methodNotAllowed(res, ['PUT', 'DELETE']);
+  return methodNotAllowed(res, ['GET', 'PUT', 'DELETE']);
 }

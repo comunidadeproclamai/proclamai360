@@ -6,6 +6,10 @@ import { MemberFormModal } from '../components/MemberFormModal.jsx';
 import { Plus, Search } from 'lucide-react';
 import { useAuth } from '../../auth/hooks/useAuth.js';
 import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
+import { Pagination } from '../../../components/common/Pagination.jsx';
+import { ExportButton } from '../../../components/common/ExportButton.jsx';
+import { ConfirmDialog } from '../../../components/feedback/ConfirmDialog.jsx';
+import { exportToExcel, exportToPDF } from '../../../services/exportService.js';
 
 const PageContainer = styled.div`
   display: flex;
@@ -45,6 +49,11 @@ const Subtitle = styled.p`
   color: ${({ theme }) => theme.colors.muted};
   font-size: 1rem;
   font-weight: 400;
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 1rem;
 `;
 
 const PrimaryButton = styled.button`
@@ -156,8 +165,58 @@ const Select = styled.select`
 export function MembersPage() {
   const { user } = useAuth();
   const canManageMembers = hasPermission(user, PERMISSIONS.MEMBERS_WRITE);
-  const { members, isLoading, search, setSearch, statusFilter, setStatusFilter, addMember, deleteMember } = useMembers();
+  
+  const { 
+    members, isLoading, search, setSearch, statusFilter, setStatusFilter, 
+    page, setPage, totalPages, addMember, updateMember, deleteMember 
+  } = useMembers();
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [memberToEdit, setMemberToEdit] = useState(null);
+  
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  const handleEdit = (member) => {
+    setMemberToEdit(member);
+    setIsModalOpen(true);
+  };
+
+  const handleAddNew = () => {
+    setMemberToEdit(null);
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (data) => {
+    if (memberToEdit) {
+      await updateMember(memberToEdit.id, data);
+    } else {
+      await addMember(data);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (confirmDeleteId) {
+      await deleteMember(confirmDeleteId);
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const exportColumns = [
+    { key: 'name', label: 'Nome' },
+    { key: 'email', label: 'E-mail' },
+    { key: 'phone', label: 'Telefone' },
+    { key: 'cpf', label: 'CPF' },
+    { key: 'status', label: 'Status' },
+    { key: 'congregation', label: 'Congregação' },
+  ];
+
+  const handleExportExcel = async () => {
+    exportToExcel(members, exportColumns, 'Membros.xlsx');
+  };
+
+  const handleExportPDF = async () => {
+    exportToPDF(members, exportColumns, 'Relatório de Membros', 'Membros.pdf');
+  };
 
   return (
     <PageContainer>
@@ -166,24 +225,31 @@ export function MembersPage() {
           <Title>Membros</Title>
           <Subtitle>Gerencie os cadastros e dados pessoais da congregação.</Subtitle>
         </TitleBlock>
-        {canManageMembers && (
-          <PrimaryButton onClick={() => setIsModalOpen(true)}>
-            <Plus size={20} />
-            Novo Membro
-          </PrimaryButton>
-        )}
+        <HeaderActions>
+          <ExportButton 
+            onExportExcel={handleExportExcel} 
+            onExportPDF={handleExportPDF} 
+            disabled={members.length === 0} 
+          />
+          {canManageMembers && (
+            <PrimaryButton onClick={handleAddNew}>
+              <Plus size={20} />
+              Novo Membro
+            </PrimaryButton>
+          )}
+        </HeaderActions>
       </Header>
 
       <FiltersBar>
         <SearchInputWrapper>
           <SearchIcon size={18} />
           <Input 
-            placeholder="Buscar por nome ou e-mail..." 
+            placeholder="Buscar por nome, e-mail ou CPF..." 
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </SearchInputWrapper>
-        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
           <option value="ALL">Todos os Status</option>
           <option value="ACTIVE">Ativos</option>
           <option value="VISITOR">Visitantes</option>
@@ -194,16 +260,32 @@ export function MembersPage() {
       <MembersTable
         members={members}
         isLoading={isLoading}
-        onDelete={deleteMember}
+        onDelete={id => setConfirmDeleteId(id)}
+        onEdit={handleEdit}
         canManage={canManageMembers}
       />
+
+      {!isLoading && members.length > 0 && (
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+      )}
 
       {isModalOpen && canManageMembers && (
         <MemberFormModal 
           onClose={() => setIsModalOpen(false)} 
-          onSave={addMember} 
+          onSave={handleSave} 
+          memberToEdit={memberToEdit}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteId}
+        title="Inativar Membro"
+        message="Tem certeza que deseja inativar este membro? Ele perderá acesso ao painel."
+        confirmLabel="Sim, inativar"
+        cancelLabel="Cancelar"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </PageContainer>
   );
 }

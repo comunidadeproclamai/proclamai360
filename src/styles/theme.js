@@ -1,4 +1,67 @@
+// ─── Shared design tokens ──────────────────────────────────────
+const shared = {
+  fontSize: {
+    xs: '0.72rem',
+    sm: '0.8rem',
+    base: '0.95rem',
+    md: '1rem',
+    lg: '1.15rem',
+    xl: '1.25rem',
+    '2xl': '1.5rem',
+    '3xl': '2rem',
+    '4xl': '2.5rem',
+  },
+  fontWeight: {
+    regular: 400,
+    medium: 500,
+    semibold: 600,
+    bold: 700,
+    extrabold: 800,
+  },
+  lineHeight: {
+    tight: 1.2,
+    normal: 1.5,
+    relaxed: 1.65,
+  },
+  spacing: {
+    '0': '0',
+    '1': '0.25rem',
+    '2': '0.5rem',
+    '3': '0.75rem',
+    '4': '1rem',
+    '5': '1.25rem',
+    '6': '1.5rem',
+    '7': '1.75rem',
+    '8': '2rem',
+    '10': '2.5rem',
+    '12': '3rem',
+    '16': '4rem',
+  },
+  radii: {
+    sm: '8px',
+    md: '12px',
+    lg: '24px',
+    full: '9999px',
+  },
+  transition: {
+    fast: '150ms ease',
+    normal: '250ms cubic-bezier(0.16, 1, 0.3, 1)',
+    slow: '400ms cubic-bezier(0.16, 1, 0.3, 1)',
+  },
+  zIndex: {
+    base: 1,
+    sticky: 10,
+    sidebar: 30,
+    backdrop: 40,
+    modal: 1000,
+    toast: 2000,
+    tooltip: 3000,
+  },
+};
+
+// ─── Dark theme ────────────────────────────────────────────────
 export const darkTheme = {
+  ...shared,
   colors: {
     charcoal: '#120e0f',
     surface: '#1c1617',
@@ -17,17 +80,15 @@ export const darkTheme = {
     success: '#3ca876',
     warning: '#d4a23f',
     danger: '#df5353',
-  },
-  radii: {
-    sm: '8px',
-    md: '12px',
-    lg: '24px',
+    info: '#5b9bf5',
   },
   shadow: '0 20px 50px rgba(0, 0, 0, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3)',
   glowShadow: '0 0 30px rgba(197, 165, 92, 0.15)',
 };
 
+// ─── Light theme ───────────────────────────────────────────────
 export const lightTheme = {
+  ...shared,
   colors: {
     charcoal: '#FAF8F5',
     surface: '#ffffff',
@@ -46,11 +107,7 @@ export const lightTheme = {
     success: '#2c8f61',
     warning: '#ba8b2d',
     danger: '#cd3d3d',
-  },
-  radii: {
-    sm: '8px',
-    md: '12px',
-    lg: '24px',
+    info: '#3b7fe0',
   },
   shadow: '0 20px 50px rgba(43, 30, 33, 0.07), 0 5px 15px rgba(43, 30, 33, 0.03)',
   glowShadow: '0 0 30px rgba(166, 131, 63, 0.08)',

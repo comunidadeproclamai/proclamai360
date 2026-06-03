@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { infantilService } from '../services/infantilService.js';
 import { mapChildRecord, mapLiveCheckin } from '../utils/infantilFormatters.js';
+import { realtimeService } from '../../../services/realtimeService.js';
 
 export function useInfantilAdmin({ enabled = true } = {}) {
   const [activeChildren, setActiveChildren] = useState([]);
@@ -43,6 +44,24 @@ export function useInfantilAdmin({ enabled = true } = {}) {
   useEffect(() => {
     loadInfantilData();
   }, [loadInfantilData]);
+
+  // Realtime updates
+  useEffect(() => {
+    if (!enabled) return;
+    
+    const channelInserts = realtimeService.subscribeToInserts('infantilCheckin', () => {
+      loadInfantilData();
+    });
+    
+    const channelUpdates = realtimeService.subscribeToUpdates('infantilCheckin', () => {
+      loadInfantilData();
+    });
+
+    return () => {
+      realtimeService.unsubscribe(channelInserts);
+      realtimeService.unsubscribe(channelUpdates);
+    };
+  }, [enabled, loadInfantilData]);
 
   const createQuickCheckin = async (payload) => {
     if (!enabled) return null;

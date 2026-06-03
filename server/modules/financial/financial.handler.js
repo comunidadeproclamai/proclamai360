@@ -52,7 +52,15 @@ export async function handleFinancialTransactions(req, res) {
 }
 
 export async function handleFinancialTransactionById(req, res) {
-  if (req.method !== 'DELETE') return methodNotAllowed(res, ['DELETE']);
   const authenticatedUser = await ensureFinanceManager(req);
-  return sendJson(res, 200, await deleteTransaction(authenticatedUser, req.query.id));
+  
+  if (req.method === 'DELETE') {
+    return sendJson(res, 200, await deleteTransaction(authenticatedUser, req.query.id));
+  }
+
+  if (req.method === 'PUT') {
+    return sendJson(res, 200, await updateTransaction(authenticatedUser, req.query.id, req.body));
+  }
+
+  return methodNotAllowed(res, ['PUT', 'DELETE']);
 }

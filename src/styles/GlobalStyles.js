@@ -1,6 +1,7 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const GlobalStyles = createGlobalStyle`
+  /* ─── Reset & Base ──────────────────────────────────────── */
   * {
     box-sizing: border-box;
     transition: background-color 250ms ease, border-color 250ms ease, box-shadow 250ms ease;
@@ -24,6 +25,13 @@ export const GlobalStyles = createGlobalStyle`
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* ─── Selection ─────────────────────────────────────────── */
+  ::selection {
+    background: rgba(92, 6, 30, 0.35);
+    color: ${({ theme }) => theme.colors.goldLight};
+  }
+
+  /* ─── Form Elements ─────────────────────────────────────── */
   button,
   input,
   select,
@@ -44,13 +52,19 @@ export const GlobalStyles = createGlobalStyle`
     transition: color 150ms ease;
   }
 
+  /* ─── Root Layout ───────────────────────────────────────── */
   #root {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
   }
 
-  /* Custom Premium Scrollbar */
+  /* ─── Numeric font ──────────────────────────────────────── */
+  .font-numeric {
+    font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  /* ─── Custom Premium Scrollbar ──────────────────────────── */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -68,5 +82,61 @@ export const GlobalStyles = createGlobalStyle`
 
   ::-webkit-scrollbar-thumb:hover {
     background: ${({ theme }) => theme.colors.wineLight};
+  }
+
+  /* ─── Global Keyframes ──────────────────────────────────── */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(100%); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes slideOutRight {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(100%); }
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.5; }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes progressShrink {
+    from { width: 100%; }
+    to   { width: 0%; }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
   }
 `;

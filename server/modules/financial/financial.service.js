@@ -147,23 +147,38 @@ export async function getSupportData() {
 }
 
 export async function listTransactions(query = {}) {
-  const requestedLimit = Number(query.limit || 100);
+  const requestedLimit = Number(query.limit || 10);
   const limit = Number.isFinite(requestedLimit)
     ? Math.min(Math.max(Math.trunc(requestedLimit), 1), MAX_TRANSACTION_LIMIT)
-    : 100;
+    : 10;
+    
+  const page = Number(query.page || 1);
+  const skip = (page - 1) * limit;
+  const whereClause = buildTransactionWhere(query);
 
-  const transactions = await prisma.financialTransaction.findMany({
-    where: buildTransactionWhere(query),
-    orderBy: { date: 'desc' },
-    take: limit,
-    include: {
-      category: { select: { name: true } },
-      account: { select: { name: true } },
-      createdBy: { select: { name: true } },
-    },
-  });
+  const [transactions, total] = await Promise.all([
+    prisma.financialTransaction.findMany({
+      where: whereClause,
+      orderBy: { date: 'desc' },
+      skip,
+      take: limit,
+      include: {
+        category: { select: { name: true } },
+        account: { select: { name: true } },
+        createdBy: { select: { name: true } },
+      },
+    }),
+    prisma.financialTransaction.count({ where: whereClause })
+  ]);
 
-  return transactions.map(mapTransaction);
+  return {
+    data: transactions.map(mapTransaction),
+    meta: {
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    }
+  };
 }
 
 export async function createTransaction(authenticatedUser, payload = {}) {
@@ -244,4 +259,73 @@ export async function deleteTransaction(authenticatedUser, id) {
   });
 
   return { success: true };
+}
+
+export async function updateTransaction(authenticatedUser, id, payload = {}) {
+  if (!id) throw createHttpError(400, 'validation_error', 'ID da transacao e obrigatorio.');
+  const data = normalizeTransactionPayload(payload);
+
+  const existingTransaction = await prisma.financialTransaction.findUnique({ where: { id } });
+  if (!existingTransaction) throw createHttpError(404, 'not_found', 'Transacao nao encontrada.');
+
+  const [account, category] = await Promise.all([
+    prisma.financialAccount.findUnique({ where: { id: data.accountId }, select: { id: true } }),
+    prisma.financialCategory.findUnique({ where: { id: data.categoryId }, select: { id: true, type: true } }),
+  ]);
+
+  if (!account) throw createHttpError(404, 'account_not_found', 'Conta financeira nao encontrada.');
+  if (!category) throw createHttpError(404, 'category_not_found', 'Categoria financeira nao encontrada.');
+  if (category.type !== data.type) {
+    throw createHttpError(400, 'category_type_mismatch', 'Categoria incompativel com o tipo de lancamento.');
+  }
+
+  // Calculate balance adjustments if amount or account changed
+  const reverseModifier = existingTransaction.type === 'OUTFLOW' 
+    ? { increment: existingTransaction.amount } 
+    : { decrement: existingTransaction.amount };
+    
+  const newModifier = data.type === 'OUTFLOW' 
+    ? { decrement: data.amount } 
+    : { increment: data.amount };
+
+  const transactions = [];
+
+  // Revert old transaction effect on old account
+  transactions.push(prisma.financialAccount.update({
+    where: { id: existingTransaction.accountId },
+    data: { balance: reverseModifier },
+  }));
+
+  // Apply new transaction effect on new account
+  transactions.push(prisma.financialAccount.update({
+    where: { id: data.accountId },
+    data: { balance: newModifier },
+  }));
+
+  // Update the transaction itself
+  transactions.push(prisma.financialTransaction.update({
+    where: { id },
+    data: {
+      ...data,
+      updatedAt: new Date(),
+    },
+    include: {
+      category: { select: { name: true } },
+      account: { select: { name: true } },
+      createdBy: { select: { name: true } },
+    },
+  }));
+
+  const results = await prisma.$transaction(transactions);
+  const updatedTransaction = results[2];
+
+  await auditAction(authenticatedUser, 'financial.transaction.update', {
+    transactionId: updatedTransaction.id,
+    accountId: data.accountId,
+    categoryId: data.categoryId,
+    amount: data.amount,
+    type: data.type,
+  });
+
+  return mapTransaction(updatedTransaction);
 }

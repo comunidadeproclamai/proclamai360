@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { infantilService } from '../services/infantilService.js';
 import { mapLiveCheckin } from '../utils/infantilFormatters.js';
+import { realtimeService } from '../../../services/realtimeService.js';
 
 export function useInfantilLive({ enabled = true } = {}) {
   const [activeChildren, setActiveChildren] = useState([]);
@@ -28,6 +29,24 @@ export function useInfantilLive({ enabled = true } = {}) {
   useEffect(() => {
     fetchLive();
   }, [fetchLive]);
+
+  // Realtime updates
+  useEffect(() => {
+    if (!enabled) return;
+    
+    const channelInserts = realtimeService.subscribeToInserts('infantilCheckin', () => {
+      fetchLive();
+    });
+    
+    const channelUpdates = realtimeService.subscribeToUpdates('infantilCheckin', () => {
+      fetchLive();
+    });
+
+    return () => {
+      realtimeService.unsubscribe(channelInserts);
+      realtimeService.unsubscribe(channelUpdates);
+    };
+  }, [enabled, fetchLive]);
 
   const addCheckin = async (name, age, allergies) => {
     if (!enabled) return null;

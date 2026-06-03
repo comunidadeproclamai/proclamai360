@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Scale, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { formatCurrency } from '../../../utils/currency.js';
+import { SkeletonLine as Skeleton } from '../../../components/feedback/Skeleton.jsx';
 
 export function BalanceCards({ summary, isLoading }) {
   const periodResult = Number(summary.periodResult || 0);
@@ -8,10 +9,10 @@ export function BalanceCards({ summary, isLoading }) {
   if (isLoading) {
     return (
       <Grid>
-        <Card><Title>Carregando...</Title></Card>
-        <Card><Title>Carregando...</Title></Card>
-        <Card><Title>Carregando...</Title></Card>
-        <Card><Title>Carregando...</Title></Card>
+        <Card><Skeleton height="60px" /></Card>
+        <Card><Skeleton height="60px" /></Card>
+        <Card><Skeleton height="60px" /></Card>
+        <Card><Skeleton height="60px" /></Card>
       </Grid>
     );
   }

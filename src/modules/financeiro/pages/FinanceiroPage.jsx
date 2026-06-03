@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import styled from 'styled-components';
-import { ArrowDownLeft, ArrowUpRight, Plus, Search, Trash2, X } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { BalanceCards } from '../components/BalanceCards.jsx';
 import { TransactionModal } from '../components/TransactionModal.jsx';
+import { TransactionsTable } from '../components/TransactionsTable.jsx';
 import { useFinanceiro } from '../hooks/useFinanceiro.js';
-import { formatCurrency } from '../../../utils/currency.js';
 import { PERMISSIONS, hasPermission } from '../../../lib/permissions.js';
 import { useAuth } from '../../auth/hooks/useAuth.js';
+import { Pagination } from '../../../components/common/Pagination.jsx';
+import { ExportButton } from '../../../components/common/ExportButton.jsx';
+import { ConfirmDialog } from '../../../components/feedback/ConfirmDialog.jsx';
+import { exportToExcel, exportToPDF } from '../../../services/exportService.js';
+import { formatCurrency } from '../../../utils/currency.js';
 
 export function FinanceiroPage() {
   const { user } = useAuth();
   const canManageFinance = hasPermission(user, PERMISSIONS.FINANCIAL_WRITE);
+  
   const {
     transactions,
     summary,
@@ -18,38 +24,63 @@ export function FinanceiroPage() {
     filters,
     isLoading,
     isSubmitting,
+    page,
+    setPage,
+    totalPages,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     updateFilter,
     resetFilters,
   } = useFinanceiro();
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
-  const [notice, setNotice] = useState(null);
 
   const categoryOptions = filters.type
     ? supportData.categories.filter((category) => category.type === filters.type)
     : supportData.categories;
 
-  const formatDate = (isoString) => {
-    return new Date(isoString).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+  const handleAddNew = () => {
+    setTransactionToEdit(null);
+    setIsModalOpen(true);
   };
 
-  const handleAddTransaction = async (payload) => {
-    await addTransaction(payload);
-    setNotice({ type: 'success', message: 'Lancamento salvo com sucesso.' });
+  const handleEdit = (transaction) => {
+    setTransactionToEdit(transaction);
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (payload) => {
+    if (transactionToEdit) {
+      await updateTransaction(transactionToEdit.id, payload);
+    } else {
+      await addTransaction(payload);
+    }
   };
 
   const handleDeleteTransaction = async () => {
     if (!pendingDelete) return;
+    await deleteTransaction(pendingDelete.id);
+    setPendingDelete(null);
+  };
 
-    try {
-      await deleteTransaction(pendingDelete.id);
-      setPendingDelete(null);
-      setNotice({ type: 'success', message: 'Lancamento removido e saldo recalculado.' });
-    } catch (error) {
-      setNotice({ type: 'error', message: error.response?.data?.message || 'Nao foi possivel excluir o lancamento.' });
-    }
+  const exportColumns = [
+    { key: 'description', label: 'Descrição' },
+    { key: 'category', label: 'Categoria' },
+    { key: 'account', label: 'Conta' },
+    { key: 'type', label: 'Tipo', render: (val) => val === 'INFLOW' ? 'RECEITA' : 'DESPESA' },
+    { key: 'amount', label: 'Valor', render: (val) => formatCurrency(val) },
+    { key: 'date', label: 'Data', render: (val) => new Date(val).toLocaleDateString('pt-BR') },
+  ];
+
+  const handleExportExcel = async () => {
+    exportToExcel(transactions, exportColumns, 'Transacoes_Financeiras.xlsx');
+  };
+
+  const handleExportPDF = async () => {
+    exportToPDF(transactions, exportColumns, 'Relatório Financeiro', 'Transacoes_Financeiras.pdf');
   };
 
   return (
@@ -59,21 +90,22 @@ export function FinanceiroPage() {
           <Title>Financeiro</Title>
           <Subtitle>Acompanhe saldos, dízimos, ofertas e despesas.</Subtitle>
         </TitleBlock>
-        {canManageFinance && (
-          <PrimaryButton type="button" onClick={() => setIsModalOpen(true)}>
-            <Plus size={20} />
-            Lançar Valor
-          </PrimaryButton>
-        )}
+        <HeaderActions>
+          <ExportButton 
+            onExportExcel={handleExportExcel} 
+            onExportPDF={handleExportPDF} 
+            disabled={transactions.length === 0} 
+          />
+          {canManageFinance && (
+            <PrimaryButton type="button" onClick={handleAddNew}>
+              <Plus size={20} />
+              Lançar Valor
+            </PrimaryButton>
+          )}
+        </HeaderActions>
       </Header>
 
       <BalanceCards summary={summary} isLoading={isLoading} />
-
-      {notice && (
-        <Notice $type={notice.type} onClick={() => setNotice(null)}>
-          {notice.message}
-        </Notice>
-      )}
 
       <FiltersBar>
         <FilterField>
@@ -141,66 +173,41 @@ export function FinanceiroPage() {
       <Statement>
         <StatementHeader>
           <h2>Extrato</h2>
-          <span>{transactions.length} lançamentos</span>
+          <span>{transactions.length} lançamentos na página</span>
         </StatementHeader>
-
-        {isLoading ? (
-          <EmptyText>Carregando...</EmptyText>
-        ) : (
-          <List>
-            {transactions.map((transaction) => (
-              <ListItem key={transaction.id}>
-                <InfoBlock>
-                  <IconCircle $type={transaction.type}>
-                    {transaction.type === 'INFLOW' ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
-                  </IconCircle>
-                  <Details>
-                    <Description>{transaction.description}</Description>
-                    <Meta>{transaction.category} • {transaction.account} • {formatDate(transaction.date)}</Meta>
-                  </Details>
-                </InfoBlock>
-                <ValueBlock>
-                  <Amount $type={transaction.type}>
-                    {transaction.type === 'INFLOW' ? '+' : '-'} {formatCurrency(transaction.amount)}
-                  </Amount>
-                  {canManageFinance && (
-                    <DeleteButton type="button" onClick={() => setPendingDelete(transaction)}>
-                      <Trash2 size={16} />
-                    </DeleteButton>
-                  )}
-                </ValueBlock>
-              </ListItem>
-            ))}
-            {transactions.length === 0 && <EmptyText>Nenhuma movimentação encontrada.</EmptyText>}
-          </List>
-        )}
+        
+        <TransactionsTable 
+          transactions={transactions}
+          isLoading={isLoading}
+          onDelete={(id) => setPendingDelete(transactions.find(t => t.id === id))}
+          onEdit={handleEdit}
+          canManage={canManageFinance}
+        />
       </Statement>
+
+      {!isLoading && transactions.length > 0 && (
+        <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+      )}
 
       {isModalOpen && canManageFinance && (
         <TransactionModal
           isSubmitting={isSubmitting}
           onClose={() => setIsModalOpen(false)}
-          onSave={handleAddTransaction}
+          onSave={handleSave}
           supportData={supportData}
+          transactionToEdit={transactionToEdit}
         />
       )}
 
-      {pendingDelete && (
-        <ConfirmOverlay>
-          <ConfirmBox>
-            <h2>Excluir lançamento?</h2>
-            <p>O saldo da conta será recalculado após excluir {formatCurrency(pendingDelete.amount)}.</p>
-            <ConfirmActions>
-              <SecondaryButton type="button" onClick={() => setPendingDelete(null)} disabled={isSubmitting}>
-                Cancelar
-              </SecondaryButton>
-              <DangerButton type="button" onClick={handleDeleteTransaction} disabled={isSubmitting}>
-                {isSubmitting ? 'Excluindo...' : 'Excluir'}
-              </DangerButton>
-            </ConfirmActions>
-          </ConfirmBox>
-        </ConfirmOverlay>
-      )}
+      <ConfirmDialog
+        isOpen={!!pendingDelete}
+        title="Excluir lançamento?"
+        message={`O saldo da conta será recalculado após excluir ${pendingDelete ? formatCurrency(pendingDelete.amount) : ''}.`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        onConfirm={handleDeleteTransaction}
+        onCancel={() => setPendingDelete(null)}
+      />
     </PageContainer>
   );
 }
@@ -242,6 +249,11 @@ const Subtitle = styled.p`
   color: ${({ theme }) => theme.colors.muted};
 `;
 
+const HeaderActions = styled.div`
+  display: flex;
+  gap: 1rem;
+`;
+
 const PrimaryButton = styled.button`
   min-height: 2.85rem;
   display: inline-flex;
@@ -258,15 +270,6 @@ const PrimaryButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.wineLight};
   }
-`;
-
-const Notice = styled.div`
-  padding: 0.85rem 1rem;
-  border-radius: ${({ theme }) => theme.radii.md};
-  border: 1px solid ${({ $type, theme }) => ($type === 'success' ? 'rgba(60,168,118,0.36)' : 'rgba(223,83,83,0.36)')};
-  background: ${({ $type }) => ($type === 'success' ? 'rgba(60,168,118,0.1)' : 'rgba(223,83,83,0.1)')};
-  color: ${({ $type, theme }) => ($type === 'success' ? theme.colors.success : theme.colors.danger)};
-  font-weight: 800;
 `;
 
 const FiltersBar = styled.div`
@@ -394,150 +397,4 @@ const StatementHeader = styled.div`
     font-size: 0.85rem;
     font-weight: 800;
   }
-`;
-
-const List = styled.ul`
-  margin: 0;
-  padding: 0;
-  list-style: none;
-`;
-
-const ListItem = styled.li`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 1.5rem;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-
-  &:last-child {
-    border-bottom: 0;
-  }
-`;
-
-const InfoBlock = styled.div`
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 1rem;
-`;
-
-const IconCircle = styled.div`
-  width: 2.5rem;
-  height: 2.5rem;
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: ${({ $type }) => ($type === 'INFLOW' ? 'rgba(60,168,118,0.08)' : 'rgba(223,83,83,0.08)')};
-  color: ${({ $type, theme }) => ($type === 'INFLOW' ? theme.colors.success : theme.colors.danger)};
-`;
-
-const Details = styled.div`
-  min-width: 0;
-`;
-
-const Description = styled.strong`
-  display: block;
-  color: ${({ theme }) => theme.colors.ice};
-`;
-
-const Meta = styled.span`
-  display: block;
-  margin-top: 0.2rem;
-  color: ${({ theme }) => theme.colors.muted};
-  font-size: 0.82rem;
-`;
-
-const ValueBlock = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex: 0 0 auto;
-`;
-
-const Amount = styled.span`
-  color: ${({ $type, theme }) => ($type === 'INFLOW' ? theme.colors.success : theme.colors.ice)};
-  font-size: 1.05rem;
-  font-weight: 800;
-`;
-
-const DeleteButton = styled.button`
-  display: grid;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid transparent;
-  border-radius: ${({ theme }) => theme.radii.sm};
-  background: transparent;
-  color: ${({ theme }) => theme.colors.muted};
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.danger};
-    border-color: rgba(223, 83, 83, 0.2);
-    background: rgba(223, 83, 83, 0.08);
-  }
-`;
-
-const EmptyText = styled.div`
-  padding: 2.5rem;
-  text-align: center;
-  color: ${({ theme }) => theme.colors.muted};
-`;
-
-const ConfirmOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.68);
-`;
-
-const ConfirmBox = styled.div`
-  width: min(440px, 100%);
-  padding: 1.5rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.lg};
-  background: ${({ theme }) => theme.colors.surface};
-  box-shadow: ${({ theme }) => theme.shadow};
-
-  h2 {
-    margin: 0;
-    color: ${({ theme }) => theme.colors.ice};
-    font-size: 1.15rem;
-  }
-
-  p {
-    color: ${({ theme }) => theme.colors.muted};
-    line-height: 1.55;
-  }
-`;
-
-const ConfirmActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-`;
-
-const SecondaryButton = styled.button`
-  min-height: 2.65rem;
-  padding: 0 1rem;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.md};
-  background: transparent;
-  color: ${({ theme }) => theme.colors.ice};
-  font-weight: 800;
-`;
-
-const DangerButton = styled.button`
-  min-height: 2.65rem;
-  padding: 0 1rem;
-  border: 1px solid rgba(223, 83, 83, 0.35);
-  border-radius: ${({ theme }) => theme.radii.md};
-  background: rgba(223, 83, 83, 0.12);
-  color: ${({ theme }) => theme.colors.danger};
-  font-weight: 800;
 `;
