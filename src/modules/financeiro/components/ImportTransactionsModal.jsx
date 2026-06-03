@@ -31,41 +31,37 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Convert to array of arrays first to find headers
-        const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        // Convert to array of arrays
+        const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false }); // raw: false gets formatted strings
         if (rawData.length < 2) throw new Error('Arquivo vazio ou inválido.');
 
-        // Find header row (usually the first row with mostly strings, or a row containing "data" and "valor")
-        let headerRowIndex = -1;
+        // Find header row
+        let headerRowIndex = 0;
+        let dateIdx = -1, descIdx = -1, valIdx = -1, typeIdx = -1;
+
         for (let i = 0; i < Math.min(20, rawData.length); i++) {
-          const row = rawData[i];
-          if (!row || !Array.isArray(row)) continue;
-          const text = row.map(c => String(c).toLowerCase().trim()).join(' ');
-          if ((text.includes('data') || text.includes('release_date')) && (text.includes('valor') || text.includes('descri') || text.includes('amount') || text.includes('transaction'))) {
-            headerRowIndex = i;
-            break;
+          const row = rawData[i] || [];
+          const text = row.join(' ').toLowerCase();
+          
+          if (text.includes('data') || text.includes('date')) {
+            const headers = row.map(h => String(h || '').toLowerCase().trim());
+            
+            dateIdx = headers.findIndex(h => h === 'release_date' || h === 'data' || h.includes('dat'));
+            descIdx = headers.findIndex(h => h === 'transaction_type' || h === 'descrição' || h.includes('descri') || h.includes('hist') || h.includes('detalhe'));
+            valIdx = headers.findIndex(h => h === 'transaction_net_amount' || h === 'valor líquido' || h === 'valor' || h === 'amount' || h.includes('val') || h.includes('net_amount'));
+            typeIdx = headers.findIndex(h => h.includes('tip') || h.includes('oper') || h.includes('status'));
+
+            if (dateIdx !== -1 && (descIdx !== -1 || valIdx !== -1)) {
+              headerRowIndex = i;
+              break;
+            }
           }
         }
-        
-        if (headerRowIndex === -1) headerRowIndex = 0;
-        
-        const headers = rawData[headerRowIndex].map(h => String(h || '').toLowerCase().trim());
-        
-        // Try to identify columns
-        let dateIdx = headers.findIndex(h => h === 'release_date' || h === 'data' || h === 'data de criação' || h.includes('dat'));
-        let descIdx = headers.findIndex(h => h === 'transaction_type' || h === 'descrição' || h.includes('descri') || h === 'histórico' || h.includes('detalhe') || h === 'nome do pagador');
-        let valIdx = headers.findIndex(h => h === 'transaction_net_amount' || h === 'transaction_amount' || h === 'valor líquido' || h === 'valor da transação' || h === 'valor' || h.includes('val') || h.includes('amount'));
-        let typeIdx = headers.findIndex(h => h.includes('tip') || h.includes('oper') || h.includes('mov') || h.includes('status'));
 
-        // If 'nome do pagador' exists, let's also grab 'descrição' if possible
-        if (descIdx === -1) {
-          descIdx = headers.findIndex(h => h === 'contraparte' || h.includes('origem'));
-        }
-
-        // Fallback if columns not found explicitly
+        // Fallbacks
         if (dateIdx === -1) dateIdx = 0;
         if (descIdx === -1) descIdx = 1;
-        if (valIdx === -1) valIdx = 2;
+        if (valIdx === -1) valIdx = 3; // In MP, Net Amount is usually col 3 or 4, ID is col 2.
 
         const transactions = [];
 
@@ -78,23 +74,21 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
           let amountVal = row[valIdx];
           let typeVal = typeIdx !== -1 ? String(row[typeIdx]).toLowerCase() : '';
 
-          if (!dateVal || !amountVal) continue; // Skip invalid rows
+          if (!dateVal || !amountVal) continue;
 
           // Parse Amount
           let amount = 0;
-          if (typeof amountVal === 'number') {
-            amount = amountVal;
-          } else {
-            // "R$ 1.500,00" -> 1500.00
-            const cleanStr = String(amountVal).replace(/[^0-9,-]/g, '').replace(',', '.');
-            amount = parseFloat(cleanStr);
-          }
+          const cleanStr = String(amountVal).replace(/[^0-9,-]/g, '').replace(',', '.');
+          amount = parseFloat(cleanStr);
 
           if (isNaN(amount) || amount === 0) continue;
 
+          // Check if it's the ID by mistake (if amount > 100,000,000 it's likely an ID)
+          if (amount > 100000000 && String(amountVal).includes('E+')) continue;
+
           // Determine Type
           let type = 'INFLOW';
-          if (amount < 0) {
+          if (amount < 0 || String(amountVal).includes('-')) {
             type = 'OUTFLOW';
           } else if (typeVal.includes('saíd') || typeVal.includes('said') || typeVal.includes('desp') || typeVal.includes('deb') || typeVal.includes('pag') || typeVal.includes('tarif')) {
             type = 'OUTFLOW';
@@ -102,18 +96,24 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
 
           amount = Math.abs(amount);
 
-          // Parse Date (XLSX sometimes returns date serials)
-          let date;
-          if (typeof dateVal === 'number') {
-            date = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
-          } else {
-            // Try to parse 'DD/MM/YYYY'
-            const parts = String(dateVal).split('/');
-            if (parts.length === 3) {
+          // Parse Date (since raw: false, it should be a string like "04/05/2026" or "2026-05-04")
+          let date = new Date();
+          const strDate = String(dateVal);
+          
+          if (strDate.includes('/')) {
+            const parts = strDate.split('/');
+            // If DD/MM/YYYY
+            if (parts[2]?.length === 4) {
               date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00Z`);
-            } else {
-              date = new Date(dateVal);
+            } else if (parts[0]?.length === 4) {
+              // YYYY/MM/DD
+              date = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T12:00:00Z`);
             }
+          } else if (strDate.includes('-')) {
+            date = new Date(strDate);
+          } else if (!isNaN(Number(strDate))) {
+            // Excel serial date fallback
+            date = new Date(Math.round((Number(strDate) - 25569) * 86400 * 1000));
           }
 
           if (isNaN(date.getTime())) date = new Date();
@@ -130,7 +130,7 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
         setParsedData(transactions);
       } catch (err) {
         console.error('Error parsing file:', err);
-        alert('Erro ao ler o arquivo. Verifique o formato.');
+        alert('Erro ao ler o arquivo. Verifique se é um CSV ou Excel válido.');
       }
     };
     reader.readAsArrayBuffer(file);
