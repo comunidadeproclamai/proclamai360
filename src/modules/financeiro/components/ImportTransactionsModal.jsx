@@ -41,7 +41,7 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
           const row = rawData[i];
           if (!row || !Array.isArray(row)) continue;
           const text = row.map(c => String(c).toLowerCase().trim()).join(' ');
-          if (text.includes('data') && (text.includes('valor') || text.includes('descri'))) {
+          if ((text.includes('data') || text.includes('release_date')) && (text.includes('valor') || text.includes('descri') || text.includes('amount') || text.includes('transaction'))) {
             headerRowIndex = i;
             break;
           }
@@ -52,9 +52,9 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
         const headers = rawData[headerRowIndex].map(h => String(h || '').toLowerCase().trim());
         
         // Try to identify columns
-        let dateIdx = headers.findIndex(h => h === 'data' || h === 'data de criação' || h.includes('dat'));
-        let descIdx = headers.findIndex(h => h === 'descrição' || h.includes('descri') || h === 'histórico' || h.includes('detalhe') || h === 'nome do pagador');
-        let valIdx = headers.findIndex(h => h === 'valor líquido' || h === 'valor da transação' || h === 'valor' || h.includes('val'));
+        let dateIdx = headers.findIndex(h => h === 'release_date' || h === 'data' || h === 'data de criação' || h.includes('dat'));
+        let descIdx = headers.findIndex(h => h === 'transaction_type' || h === 'descrição' || h.includes('descri') || h === 'histórico' || h.includes('detalhe') || h === 'nome do pagador');
+        let valIdx = headers.findIndex(h => h === 'transaction_net_amount' || h === 'transaction_amount' || h === 'valor líquido' || h === 'valor da transação' || h === 'valor' || h.includes('val') || h.includes('amount'));
         let typeIdx = headers.findIndex(h => h.includes('tip') || h.includes('oper') || h.includes('mov') || h.includes('status'));
 
         // If 'nome do pagador' exists, let's also grab 'descrição' if possible
