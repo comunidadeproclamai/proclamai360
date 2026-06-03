@@ -26,8 +26,8 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = e.target.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
@@ -35,16 +35,32 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
         const rawData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         if (rawData.length < 2) throw new Error('Arquivo vazio ou inválido.');
 
-        // Find header row (usually the first row with mostly strings)
-        let headerRowIndex = 0;
+        // Find header row (usually the first row with mostly strings, or a row containing "data" and "valor")
+        let headerRowIndex = -1;
+        for (let i = 0; i < Math.min(20, rawData.length); i++) {
+          const row = rawData[i];
+          if (!row || !Array.isArray(row)) continue;
+          const text = row.map(c => String(c).toLowerCase().trim()).join(' ');
+          if (text.includes('data') && (text.includes('valor') || text.includes('descri'))) {
+            headerRowIndex = i;
+            break;
+          }
+        }
         
-        const headers = rawData[headerRowIndex].map(h => String(h).toLowerCase().trim());
+        if (headerRowIndex === -1) headerRowIndex = 0;
+        
+        const headers = rawData[headerRowIndex].map(h => String(h || '').toLowerCase().trim());
         
         // Try to identify columns
-        let dateIdx = headers.findIndex(h => h.includes('dat'));
-        let descIdx = headers.findIndex(h => h.includes('desc') || h.includes('detalhe') || h.includes('histórico'));
-        let valIdx = headers.findIndex(h => h.includes('val') || h.includes('import'));
-        let typeIdx = headers.findIndex(h => h.includes('tip') || h.includes('oper') || h.includes('mov'));
+        let dateIdx = headers.findIndex(h => h === 'data' || h === 'data de criação' || h.includes('dat'));
+        let descIdx = headers.findIndex(h => h === 'descrição' || h.includes('descri') || h === 'histórico' || h.includes('detalhe') || h === 'nome do pagador');
+        let valIdx = headers.findIndex(h => h === 'valor líquido' || h === 'valor da transação' || h === 'valor' || h.includes('val'));
+        let typeIdx = headers.findIndex(h => h.includes('tip') || h.includes('oper') || h.includes('mov') || h.includes('status'));
+
+        // If 'nome do pagador' exists, let's also grab 'descrição' if possible
+        if (descIdx === -1) {
+          descIdx = headers.findIndex(h => h === 'contraparte' || h.includes('origem'));
+        }
 
         // Fallback if columns not found explicitly
         if (dateIdx === -1) dateIdx = 0;
@@ -80,7 +96,7 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
           let type = 'INFLOW';
           if (amount < 0) {
             type = 'OUTFLOW';
-          } else if (typeVal.includes('saíd') || typeVal.includes('said') || typeVal.includes('desp') || typeVal.includes('deb') || typeVal.includes('pag')) {
+          } else if (typeVal.includes('saíd') || typeVal.includes('said') || typeVal.includes('desp') || typeVal.includes('deb') || typeVal.includes('pag') || typeVal.includes('tarif')) {
             type = 'OUTFLOW';
           }
 
@@ -117,7 +133,7 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
         alert('Erro ao ler o arquivo. Verifique o formato.');
       }
     };
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   };
 
   const handleConfirm = () => {
@@ -182,31 +198,34 @@ export function ImportTransactionsModal({ isOpen, onClose, supportData, onImport
             ) : (
               <>
                 <ConfigsGrid>
-                  <FormRow label="Conta Padrão (Destino/Origem)">
-                    <SelectField value={defaultAccountId} onChange={e => setDefaultAccountId(e.target.value)}>
-                      <option value="">Selecione uma conta...</option>
-                      {supportData.accounts.map(acc => (
-                        <option key={acc.id} value={acc.id}>{acc.name}</option>
-                      ))}
-                    </SelectField>
+                  <FormRow>
+                    <SelectField 
+                      label="Conta Padrão (Destino/Origem)"
+                      value={defaultAccountId} 
+                      onChange={e => setDefaultAccountId(e.target.value)}
+                      placeholder="Selecione uma conta..."
+                      options={supportData.accounts.map(acc => ({ label: acc.name, value: acc.id }))}
+                    />
                   </FormRow>
 
-                  <FormRow label="Categoria para Receitas">
-                    <SelectField value={inflowCategoryId} onChange={e => setInflowCategoryId(e.target.value)}>
-                      <option value="">Selecione...</option>
-                      {supportData.categories.filter(c => c.type === 'INFLOW').map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </SelectField>
+                  <FormRow>
+                    <SelectField 
+                      label="Categoria para Receitas"
+                      value={inflowCategoryId} 
+                      onChange={e => setInflowCategoryId(e.target.value)}
+                      placeholder="Selecione..."
+                      options={supportData.categories.filter(c => c.type === 'INFLOW').map(cat => ({ label: cat.name, value: cat.id }))}
+                    />
                   </FormRow>
 
-                  <FormRow label="Categoria para Despesas">
-                    <SelectField value={outflowCategoryId} onChange={e => setOutflowCategoryId(e.target.value)}>
-                      <option value="">Selecione...</option>
-                      {supportData.categories.filter(c => c.type === 'OUTFLOW').map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </SelectField>
+                  <FormRow>
+                    <SelectField 
+                      label="Categoria para Despesas"
+                      value={outflowCategoryId} 
+                      onChange={e => setOutflowCategoryId(e.target.value)}
+                      placeholder="Selecione..."
+                      options={supportData.categories.filter(c => c.type === 'OUTFLOW').map(cat => ({ label: cat.name, value: cat.id }))}
+                    />
                   </FormRow>
                 </ConfigsGrid>
 
