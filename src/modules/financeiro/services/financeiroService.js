@@ -23,8 +23,13 @@ export const financeiroService = {
     return data;
   },
 
+  async updateTransaction(id, txData) {
+    const { data } = await apiClient.put(`/financial/transactions/${id}`, txData);
+    return data;
+  },
+
   async importTransactions(transactions) {
-    const { data } = await apiClient.post('/financial/transactions/bulk', { transactions });
+    const { data } = await apiClient.post('/financial/bulk', { transactions });
     return data;
   },
 

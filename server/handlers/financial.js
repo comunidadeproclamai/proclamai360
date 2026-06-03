@@ -21,7 +21,7 @@ export function financialHandler(req, res) {
     return handleFinancialTransactions(req, res);
   }
 
-  if (req.query.route === 'transactions/bulk') {
+  if (req.query.route === 'bulk') {
     return handleFinancialBulk(req, res);
   }
 
